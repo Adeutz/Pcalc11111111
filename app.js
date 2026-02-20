@@ -25,8 +25,23 @@
   const chartTargetIncomeEl = document.getElementById('chartTargetIncome');
   const creditInputsRow = document.getElementById('creditInputsRow');
 
-  const STORAGE_KEY = 'pay-calculator-data';
-  const COLLAPSE_KEY_PREFIX = 'pay-calculator-collapse-';
+  const STORAGE_KEY = 'pcalc11111111-data';
+  const COLLAPSE_KEY_PREFIX = 'pcalc11111111-collapse-';
+  const STORAGE_KEY_LEGACY = 'pay-calculator-data';
+  const COLLAPSE_KEY_LEGACY_PREFIX = 'pay-calculator-collapse-';
+
+  // One-time migration from old keys so existing users keep their data
+  try {
+    if (!localStorage.getItem(STORAGE_KEY) && localStorage.getItem(STORAGE_KEY_LEGACY)) {
+      localStorage.setItem(STORAGE_KEY, localStorage.getItem(STORAGE_KEY_LEGACY));
+    }
+    ['goal', 'payRates'].forEach(function (id) {
+      var legacy = localStorage.getItem(COLLAPSE_KEY_LEGACY_PREFIX + id);
+      if (legacy !== null && localStorage.getItem(COLLAPSE_KEY_PREFIX + id) === null) {
+        localStorage.setItem(COLLAPSE_KEY_PREFIX + id, legacy);
+      }
+    });
+  } catch (e) {}
 
   let goal = null;
   let payYear = null;
