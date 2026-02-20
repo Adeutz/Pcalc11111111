@@ -21,39 +21,50 @@
     </header>
 
     <!-- STEP 1: Annual Income Goal -->
-    <section class="goal-section">
-      <div class="goal-row">
-        <label for="goalInput" class="goal-label">1. Annual income goal</label>
-        <span class="goal-currency">$</span>
-        <input type="text" id="goalInput" inputmode="numeric" placeholder="400,000" class="goal-input" maxlength="14">
-        <button type="button" class="btn btn-primary btn-sm" id="initializeYear">Initialize Pay Year</button>
-        <div class="goal-status" id="goalStatus">
-          <span class="status-item">Total: <strong id="currentTotal">$0.00</strong></span>
-          <span class="status-item">Remaining: <strong id="remainingGoal" class="remaining">—</strong></span>
+    <section class="goal-section collapsible" id="goalSection">
+      <button type="button" class="collapsible-header" id="goalSectionToggle" aria-expanded="true" aria-controls="goalSectionBody">
+        <span class="collapsible-title">1. Annual income goal</span>
+        <span class="collapsible-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="collapsible-body" id="goalSectionBody">
+        <div class="goal-row">
+          <label for="goalInput" class="goal-label">Annual income goal</label>
+          <span class="goal-currency">$</span>
+          <input type="text" id="goalInput" inputmode="numeric" placeholder="400,000" class="goal-input" maxlength="14">
+          <button type="button" class="btn btn-primary btn-sm" id="initializeYear">Initialize Pay Year</button>
+          <div class="goal-status" id="goalStatus">
+            <span class="status-item">Total: <strong id="currentTotal">$0.00</strong></span>
+            <span class="status-item">Remaining: <strong id="remainingGoal" class="remaining">—</strong></span>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- STEP 2: Pay Rate Configuration -->
-    <section class="pay-rates-section" id="payRatesSection" style="display: none;">
-      <h2>2. Set pay rates throughout the year</h2>
-      <p class="section-hint">Select months for Pay Rate 1. Pay Rate 2 will automatically include the remaining months.</p>
-      
-      <div class="pay-rate-groups" id="payRateGroups">
-        <!-- Pay rate groups will be added here -->
-      </div>
-      
-      <button type="button" class="btn btn-secondary" id="addPayRateGroup">+ Add second pay rate</button>
-      
-      <div class="other-settings">
-        <div class="setting-row">
-          <label for="bidPeriodsInput">Bid periods per month:</label>
-          <input type="number" id="bidPeriodsInput" min="1" max="12" value="1" step="1">
+    <section class="pay-rates-section collapsible" id="payRatesSection" style="display: none;">
+      <button type="button" class="collapsible-header" id="payRatesSectionToggle" aria-expanded="true" aria-controls="payRatesSectionBody">
+        <span class="collapsible-title">2. Set pay rates throughout the year</span>
+        <span class="collapsible-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="collapsible-body" id="payRatesSectionBody">
+        <p class="section-hint">Select months for Pay Rate 1. Pay Rate 2 will automatically include the remaining months.</p>
+        
+        <div class="pay-rate-groups" id="payRateGroups">
+          <!-- Pay rate groups will be added here -->
         </div>
-        <div class="setting-row">
-          <label for="percentageInput">Percentage multiplier:</label>
-          <input type="number" id="percentageInput" min="100" max="150" value="115" step="1">
-          <span class="unit">%</span>
+        
+        <button type="button" class="btn btn-secondary" id="addPayRateGroup">+ Add second pay rate</button>
+        
+        <div class="other-settings">
+          <div class="setting-row">
+            <label for="bidPeriodsInput">Bid periods per month:</label>
+            <input type="number" id="bidPeriodsInput" min="1" max="12" value="1" step="1">
+          </div>
+          <div class="setting-row">
+            <label for="percentageInput">Percentage multiplier:</label>
+            <input type="number" id="percentageInput" min="100" max="150" value="115" step="1">
+            <span class="unit">%</span>
+          </div>
         </div>
       </div>
     </section>

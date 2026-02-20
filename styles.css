@@ -87,13 +87,83 @@ body {
   opacity: 1;
 }
 
-/* Goal Section */
-.goal-section {
+/* Collapsible sections */
+.collapsible {
+  margin-bottom: 1.25rem;
+}
+
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.collapsible-header:hover {
+  background: var(--surface-light);
+  border-color: var(--accent);
+}
+
+.collapsible-title {
+  flex: 1;
+}
+
+.collapsible-chevron {
+  flex-shrink: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-left: 0.5rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.collapsible.collapsed .collapsible-chevron {
+  transform: rotate(-135deg);
+}
+
+.collapsible-body {
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
   padding: 0.6rem 1rem;
-  margin-bottom: 1.25rem;
+  transition: max-height 0.25s ease-out;
+}
+
+.collapsible:not(.collapsed) .collapsible-header {
+  border-radius: 8px 8px 0 0;
+}
+
+.collapsible.collapsed .collapsible-header {
+  border-radius: 8px;
+}
+
+.collapsible.collapsed .collapsible-body {
+  display: none;
+}
+
+/* Goal Section */
+.goal-section .collapsible-body {
+  padding: 0.6rem 1rem;
+}
+
+.goal-section {
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .goal-row {
@@ -196,10 +266,20 @@ body {
 }
 
 /* Pay Rates Section */
-.pay-rates-section {
+.pay-rates-section.collapsible {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.pay-rates-section:not(.collapsible) {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
+}
+
+.pay-rates-section {
   padding: 2rem;
   margin-bottom: 2rem;
 }

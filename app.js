@@ -26,6 +26,7 @@
   const creditInputsRow = document.getElementById('creditInputsRow');
 
   const STORAGE_KEY = 'pay-calculator-data';
+  const COLLAPSE_KEY_PREFIX = 'pay-calculator-collapse-';
 
   let goal = null;
   let payYear = null;
@@ -569,6 +570,48 @@
       updateTotals();
       renderChart();
     }
+  }
+
+  // Collapsible sections (1 & 2): restore state and wire toggles
+  function getCollapseState(sectionId) {
+    try {
+      return localStorage.getItem(COLLAPSE_KEY_PREFIX + sectionId) === '1';
+    } catch (e) { return false; }
+  }
+  function setCollapseState(sectionId, collapsed) {
+    try {
+      localStorage.setItem(COLLAPSE_KEY_PREFIX + sectionId, collapsed ? '1' : '0');
+    } catch (e) {}
+  }
+  function setSectionCollapsed(sectionEl, collapsed) {
+    if (!sectionEl) return;
+    const toggle = sectionEl.querySelector('.collapsible-header');
+    if (collapsed) {
+      sectionEl.classList.add('collapsed');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    } else {
+      sectionEl.classList.remove('collapsed');
+      if (toggle) toggle.setAttribute('aria-expanded', 'true');
+    }
+  }
+  const goalSectionEl = document.getElementById('goalSection');
+  const goalSectionToggle = document.getElementById('goalSectionToggle');
+  const payRatesSectionToggle = document.getElementById('payRatesSectionToggle');
+  if (goalSectionEl && goalSectionToggle) {
+    setSectionCollapsed(goalSectionEl, getCollapseState('goal'));
+    goalSectionToggle.addEventListener('click', function () {
+      const collapsed = goalSectionEl.classList.toggle('collapsed');
+      goalSectionToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      setCollapseState('goal', collapsed);
+    });
+  }
+  if (payRatesSection && payRatesSectionToggle) {
+    setSectionCollapsed(payRatesSection, getCollapseState('payRates'));
+    payRatesSectionToggle.addEventListener('click', function () {
+      const collapsed = payRatesSection.classList.toggle('collapsed');
+      payRatesSectionToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      setCollapseState('payRates', collapsed);
+    });
   }
 
   initializeYearBtn.addEventListener('click', initializePayYear);
