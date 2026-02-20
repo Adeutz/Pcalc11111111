@@ -4,46 +4,29 @@ Plan your pay year (Dec–Nov): set an income goal, assign pay rates by month, a
 
 **For private use only.** Nothing here is uploaded to a public website unless you choose to.
 
-**iPhone / Safari:** The app runs in Safari on iPhone 13 (and similar) and works **offline** when you open it from the Files app. Bar dragging and the target-line drag work with touch; you can also use the credit-by-month text boxes below the chart to enter values.
-
 ---
 
-## Use on your iPhone (private + offline)
+## Use on your desktop PC (Chrome, with an icon)
 
-You can run the app entirely from your iPhone using the **Files** app. Nothing is put on the internet.
+Keep the **PayCalculator** folder somewhere permanent (e.g. `Documents\GPTFILES\PayCalculator` or wherever you already have it).
 
-### 1. Get the folder onto your iPhone
+### Option 1: Chrome “Create shortcut” (easiest)
 
-Pick one way:
+1. Open **Chrome** and open the app: press **Ctrl+O**, go to the PayCalculator folder, select **index.html**, and click Open. (Or drag `index.html` into Chrome.)
+2. In Chrome, click the **three dots** (⋮) → **More tools** → **Create shortcut**.
+3. Name it **Pay Calculator**. Optionally check **Open as window** if you want it to open in its own window like an app.
+4. Click **Create**. A shortcut appears on your desktop.
+5. **Pin to taskbar:** Right‑click the new desktop shortcut → **Pin to taskbar**. You can now open it from the taskbar or desktop.
 
-- **iCloud Drive**  
-  Put the whole `PayCalculator` folder (with `index.html`, `styles.css`, `app.js`, etc.) inside iCloud Drive on your Mac or PC. It will show up in the **Files** app on your iPhone under **iCloud Drive**.
+### Option 2: Shortcut that always opens in Chrome
 
-- **AirDrop (Mac → iPhone)**  
-  In Finder, select the `PayCalculator` folder and AirDrop it to your iPhone. Open the transfer on the iPhone and choose **Save to Files** (e.g. in **On My iPhone** or iCloud Drive).
-
-- **Email or message to yourself**  
-  Zip the `PayCalculator` folder on your computer, send the zip to yourself, open the attachment on your iPhone, then tap **Save to Files**. In Files, tap the zip and choose **Uncompress** if needed.
-
-### 2. Open the app on your iPhone
-
-1. Open the **Files** app.
-2. Go to where you saved the folder (iCloud Drive, On My iPhone, or Downloads).
-3. Open the **PayCalculator** folder.
-4. Tap **index.html**.
-
-Safari will open and the app will run. It’s all local — no server, no internet. It works **offline** as long as the folder is on the device.
-
-### 3. Quick access next time
-
-- **Bookmark:** In Safari, tap the Share button → **Add Bookmark** so you can open it from the bookmarks menu.
-- **Home Screen:** In Safari, tap Share → **Add to Home Screen** to add a **Pay Calculator** icon. Tapping it will open the app from the file (still private and offline).
-
----
-
-## Use on your computer
-
-- **Double‑click** `index.html` to open it in your browser, or  
-- Drag `index.html` into Chrome/Edge/Safari.
+1. Right‑click the desktop → **New** → **Shortcut**.
+2. For “What is the location of the item?” paste this (then fix the path to match your folder):
+   ```text
+   "C:\Program Files\Google\Chrome\Application\chrome.exe" "C:\Users\Alex22Build\Documents\GPTFILES\PayCalculator\index.html"
+   ```
+   Replace `C:\Users\Alex22Build\Documents\GPTFILES\PayCalculator` with the full path to your PayCalculator folder (e.g. `D:\Apps\PayCalculator`).
+3. Click **Next**, name it **Pay Calculator**, click **Finish**.
+4. Right‑click the new shortcut → **Pin to taskbar** if you want it on the taskbar.
 
 No server or internet required; everything runs from the file.
