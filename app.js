@@ -325,12 +325,12 @@
 
   let chartLocked = false;
   const chartLockToggle = document.getElementById('chartLockToggle');
-  const lockIcon = document.getElementById('lockIcon');
+  const lockLabel = document.getElementById('lockLabel');
 
   function setChartLocked(locked) {
     chartLocked = locked;
     if (chartLockToggle) chartLockToggle.checked = locked;
-    if (lockIcon) lockIcon.textContent = locked ? '\u{1F512}' : '\u{1F513}';
+    if (lockLabel) lockLabel.textContent = locked ? 'Locked' : 'Lock bars';
     try { localStorage.setItem(COLLAPSE_KEY_PREFIX + 'chartLock', locked ? '1' : '0'); } catch (e) {}
   }
 
@@ -405,10 +405,14 @@
       }
     }
 
-    const gridStepPx = CHART_HEIGHT_PX / (maxScale / 10);
-    if (chartBars) chartBars.style.setProperty('--grid-step-px', gridStepPx + 'px');
-
     chartBars.innerHTML = '';
+
+    for (let v = 10; v <= maxScale; v += 10) {
+      const line = document.createElement('div');
+      line.className = 'chart-grid-line' + (v % 50 === 0 ? ' major' : '');
+      line.style.bottom = creditToPx(v, maxScale) + 'px';
+      chartBars.appendChild(line);
+    }
     if (chartMonthLabels) chartMonthLabels.innerHTML = '';
 
     payYear.months.forEach((month, idx) => {
@@ -863,7 +867,7 @@
         loadBtn.addEventListener('click', () => { loadFromScenarioSlot(i); });
         const overwriteBtn = document.createElement('button');
         overwriteBtn.className = 'btn btn-secondary btn-sm';
-        overwriteBtn.textContent = 'Overwrite';
+        overwriteBtn.textContent = 'Save';
         overwriteBtn.addEventListener('click', () => { saveToScenarioSlot(i); });
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-danger-outline btn-sm';
@@ -922,9 +926,29 @@
     html += '.met{color:#2e7d32}.under{color:#c62828}';
     html += '.rates-info{font-size:0.8rem;color:#555;margin-bottom:0.5rem}';
     html += '.rates-info strong{color:#222}';
-    html += '@media print{body{margin:0.5rem}h1{font-size:1.2rem}.col{page-break-inside:avoid}}';
+    html += '.chart-wrap{position:relative;margin:0.75rem 0 1rem;padding:0.5rem 0}';
+    html += '.chart-bars-row{display:flex;align-items:flex-end;gap:3px;height:120px;border-bottom:1px solid #bbb;position:relative}';
+    html += '.chart-col{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}';
+    html += '.chart-bar-fill{width:70%;max-width:24px;background:#4a90d9;border-radius:3px 3px 0 0;min-height:1px;position:relative}';
+    html += '.chart-bar-lbl{font-size:0.6rem;color:#333;font-weight:700;text-align:center;margin-bottom:1px;white-space:nowrap}';
+    html += '.chart-month-row{display:flex;gap:3px;margin-top:2px}';
+    html += '.chart-month-row span{flex:1;text-align:center;font-size:0.6rem;color:#666;min-width:0;overflow:hidden}';
+    html += '.chart-target{position:absolute;left:0;right:0;border-top:2px dashed #e67e22;z-index:2;pointer-events:none}';
+    html += '.chart-target-label{position:absolute;right:0;top:-12px;font-size:0.55rem;color:#e67e22;white-space:nowrap}';
+    html += '.nav-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap}';
+    html += '.nav-bar h1{margin:0}';
+    html += '.btn-back{display:inline-block;padding:0.5rem 1rem;font-size:0.9rem;font-weight:500;color:#fff;background:#4a90d9;border:none;border-radius:6px;cursor:pointer;text-decoration:none}';
+    html += '.btn-back:hover{background:#3a7bc8}';
+    html += '.btn-print{display:inline-block;padding:0.5rem 1rem;font-size:0.9rem;font-weight:500;color:#4a90d9;background:#fff;border:1px solid #4a90d9;border-radius:6px;cursor:pointer}';
+    html += '.btn-print:hover{background:#eef4fd}';
+    html += '@media print{body{margin:0.5rem}h1{font-size:1.2rem}.col{page-break-inside:avoid}.chart-bar-fill{-webkit-print-color-adjust:exact;print-color-adjust:exact}.nav-bar .btn-back,.nav-bar .btn-print{display:none}}';
     html += '</style></head><body>';
+    html += '<div class="nav-bar">';
     html += '<h1>Scenario Comparison</h1>';
+    html += '<div>';
+    html += '<button class="btn-print" onclick="window.print()" style="margin-right:0.5rem">Print / Save PDF</button>';
+    html += '<button class="btn-back" onclick="window.close();if(!window.closed)history.back();">Back to App</button>';
+    html += '</div></div>';
     html += '<p class="subtitle">Generated ' + new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) + '</p>';
     html += '<div class="cols">';
 
@@ -953,6 +977,47 @@
 
       html += '<div class="meta">';
       html += '<span>Goal: <strong>' + formatMoney(scGoal) + '</strong></span>';
+      html += '</div>';
+
+      // Bar chart
+      const credits = monthOrder.map(mi => {
+        const m = months.find(x => x.monthIndex === mi);
+        return m ? (m.credit || 0) : 0;
+      });
+      const maxCredit = Math.max(...credits, 1);
+      const CHART_H = 120;
+
+      let targetCreditPdf = null;
+      if (scGoal > 0 && months.length === 12) {
+        const avgPay = months.reduce((s, m) => s + (m.payRate || 0), 0) / 12;
+        const bid = months[0] ? (months[0].bidPeriods || 1) : 1;
+        const pct = months[0] ? (months[0].percentage || 1) : 1;
+        if (avgPay > 0) targetCreditPdf = scGoal / (12 * avgPay * bid * pct);
+      }
+      const chartMax = Math.max(maxCredit, targetCreditPdf || 0) * 1.15;
+
+      html += '<div class="chart-wrap">';
+      if (targetCreditPdf != null) {
+        const tPx = CHART_H - (targetCreditPdf / chartMax) * CHART_H;
+        html += '<div class="chart-target" style="top:' + tPx.toFixed(1) + 'px"><span class="chart-target-label">Target avg: ' + targetCreditPdf.toFixed(1) + ' hrs</span></div>';
+      }
+      html += '<div class="chart-bars-row">';
+      monthOrder.forEach((mi, ci) => {
+        const cr = credits[ci];
+        const hPx = (cr / chartMax) * CHART_H;
+        html += '<div class="chart-col">';
+        html += '<div class="chart-bar-lbl">' + Math.round(cr) + '</div>';
+        html += '<div class="chart-bar-fill" style="height:' + hPx.toFixed(1) + 'px"></div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '<div class="chart-month-row">';
+      monthOrder.forEach(mi => {
+        const m = months.find(x => x.monthIndex === mi);
+        const yr = m ? (m.year || '') : '';
+        html += '<span>' + MONTH_NAMES[mi] + "'" + String(yr).slice(-2) + '</span>';
+      });
+      html += '</div>';
       html += '</div>';
 
       html += '<table><thead><tr><th>Month</th><th>Rate</th><th>Credit Hrs</th><th>Monthly Income</th></tr></thead><tbody>';
@@ -985,7 +1050,6 @@
     if (win) {
       win.document.write(html);
       win.document.close();
-      setTimeout(() => { win.print(); }, 400);
     }
   }
 

@@ -482,7 +482,7 @@ body {
 .chart-lock-toggle {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
@@ -492,19 +492,43 @@ body {
   display: none;
 }
 
-.lock-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-  opacity: 0.6;
-  transition: opacity 0.15s;
+.toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 10px;
+  transition: background 0.2s;
 }
 
-.chart-lock-toggle:hover .lock-icon {
-  opacity: 1;
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
 }
 
-.chart-lock-toggle input:checked ~ .lock-icon {
-  opacity: 1;
+.chart-lock-toggle input:checked ~ .toggle-track {
+  background: var(--accent);
+}
+
+.chart-lock-toggle input:checked ~ .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.toggle-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+
+.chart-lock-toggle input:checked ~ .toggle-label {
+  color: var(--accent);
 }
 
 .chart-container {
@@ -569,24 +593,20 @@ body {
   height: 280px;
   position: relative;
   overflow: visible;
-  --grid-line: rgba(61, 66, 77, 0.5);
-  --grid-step-px: 70px;
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(var(--grid-step-px) - 1px),
-      var(--grid-line) var(--grid-step-px),
-      var(--grid-line) calc(var(--grid-step-px) + 1px)
-    ),
-    repeating-linear-gradient(
-      to right,
-      transparent 0,
-      transparent calc(100% / 12 - 1px),
-      var(--grid-line) calc(100% / 12),
-      var(--grid-line) calc(100% / 12 + 1px)
-    );
-  background-size: 100% 100%, 100% 100%;
+}
+
+.chart-grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid rgba(61, 66, 77, 0.4);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.chart-grid-line.major {
+  border-top-color: rgba(80, 86, 100, 0.6);
 }
 
 .chart-bar-cell {
