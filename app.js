@@ -448,7 +448,7 @@
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'chart-bar-edit-input';
-        input.setAttribute('inputmode', 'numeric');
+        input.setAttribute('inputmode', 'decimal');
         input.value = month.credit.toFixed(2);
         bar.appendChild(input);
         input.focus();
@@ -494,7 +494,7 @@
       label.textContent = MONTH_NAMES[month.monthIndex] + " '" + String(y).slice(-2);
       const input = document.createElement('input');
       input.type = 'text';
-      input.setAttribute('inputmode', 'numeric');
+      input.setAttribute('inputmode', 'decimal');
       input.dataset.monthIdx = String(idx);
       input.addEventListener('input', () => {
         const val = Math.max(0, Math.min(MAX_CREDIT_HARD, Number(input.value) || 0));
