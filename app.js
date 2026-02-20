@@ -446,11 +446,8 @@
       bar.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         const input = document.createElement('input');
-        input.type = 'number';
+        input.type = 'text';
         input.className = 'chart-bar-edit-input';
-        input.min = '0';
-        input.max = String(MAX_CREDIT_HARD);
-        input.step = '0.01';
         input.setAttribute('inputmode', 'numeric');
         input.value = month.credit.toFixed(2);
         bar.appendChild(input);
@@ -496,10 +493,7 @@
       const label = document.createElement('label');
       label.textContent = MONTH_NAMES[month.monthIndex] + " '" + String(y).slice(-2);
       const input = document.createElement('input');
-      input.type = 'number';
-      input.min = '0';
-      input.max = String(MAX_CREDIT_HARD);
-      input.step = '0.01';
+      input.type = 'text';
       input.setAttribute('inputmode', 'numeric');
       input.dataset.monthIdx = String(idx);
       input.addEventListener('input', () => {
