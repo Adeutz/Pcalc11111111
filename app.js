@@ -21,6 +21,8 @@
   const targetLegendItem = document.getElementById('targetLegendItem');
   const targetLegendText = document.getElementById('targetLegendText');
   const chartResultIncomeEl = document.getElementById('chartResultIncome');
+  const chartTargetIncomeEl = document.getElementById('chartTargetIncome');
+  const creditInputsRow = document.getElementById('creditInputsRow');
 
   let goal = null;
   let payYear = null;
@@ -43,6 +45,10 @@
 
   function formatHours(n) {
     return Number(n).toFixed(2);
+  }
+
+  function formatHoursWhole(n) {
+    return String(Math.round(Number(n) || 0));
   }
 
   function initializePayYear() {
@@ -212,6 +218,7 @@
   const CHART_HEIGHT_PX = 280;
   const MAX_CREDIT_HARD = 350;
   const SCALE_OPTIONS = [200, 250, 300, 350];
+  let currentChartMaxScale = 200;
 
   function pickScale(dataMax) {
     if (dataMax <= 0) return 200;
@@ -238,6 +245,7 @@
     }
     const dataMax = Math.max(...payYear.months.map(m => m.credit), targetCredit || 0);
     const maxScale = pickScale(dataMax);
+    currentChartMaxScale = maxScale;
 
     if (chartYAxis) {
       chartYAxis.innerHTML = '';
@@ -255,7 +263,7 @@
         const linePx = creditToPx(targetCredit, maxScale);
         chartTargetLine.style.top = (CHART_HEIGHT_PX - linePx) + 'px';
         chartTargetLine.style.bottom = '';
-        chartTargetLine.title = 'Target avg: ' + targetCredit.toFixed(1) + ' hrs/month to reach goal';
+        chartTargetLine.title = 'Drag to adjust target income. Target avg: ' + targetCredit.toFixed(1) + ' hrs/month';
       } else {
         chartTargetLine.classList.remove('visible');
       }
@@ -286,7 +294,7 @@
 
       const creditLabel = document.createElement('div');
       creditLabel.className = 'chart-bar-credit-label';
-      creditLabel.textContent = formatHours(month.credit);
+      creditLabel.textContent = formatHoursWhole(month.credit);
       bar.appendChild(creditLabel);
 
       const valueLabel = document.createElement('div');
@@ -297,17 +305,19 @@
       const updateBarHeight = () => {
         const h = creditToPx(month.credit, maxScale);
         bar.style.height = h + 'px';
-        creditLabel.textContent = formatHours(month.credit);
+        creditLabel.textContent = formatHoursWhole(month.credit);
         valueLabel.innerHTML = formatHours(month.credit) + ' hrs<br>' + formatMoney(computeMonthTotal(month));
       };
 
-      bar.addEventListener('mousedown', (e) => {
+      function startBarDrag(e) {
         e.preventDefault();
         e.stopPropagation();
-        const startY = e.clientY;
+        const clientY = e.clientY != null ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        const startY = clientY;
         const startCredit = month.credit;
         const onMove = (moveE) => {
-          const deltaY = startY - moveE.clientY;
+          const y = moveE.clientY != null ? moveE.clientY : (moveE.touches && moveE.touches[0] ? moveE.touches[0].clientY : startY);
+          const deltaY = startY - y;
           const deltaCredit = (deltaY / CHART_HEIGHT_PX) * maxScale;
           month.credit = Math.max(0, Math.min(MAX_CREDIT_HARD, startCredit + deltaCredit));
           updateBarHeight();
@@ -316,11 +326,19 @@
         const onUp = () => {
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
+          document.removeEventListener('touchmove', onMove, { passive: false });
+          document.removeEventListener('touchend', onUp);
+          document.removeEventListener('touchcancel', onUp);
           renderChart();
         };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
-      });
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onUp);
+        document.addEventListener('touchcancel', onUp);
+      }
+      bar.addEventListener('mousedown', startBarDrag);
+      bar.addEventListener('touchstart', startBarDrag, { passive: false });
 
       bar.addEventListener('dblclick', (e) => {
         e.stopPropagation();
@@ -358,6 +376,54 @@
       monthLabel.textContent = MONTH_NAMES[month.monthIndex] + " '" + String(y).slice(-2);
       if (chartMonthLabels) chartMonthLabels.appendChild(monthLabel);
     });
+
+    ensureCreditInputs();
+    updateCreditInputs();
+  }
+
+  function ensureCreditInputs() {
+    if (!payYear || !creditInputsRow) return;
+    if (creditInputsRow.children.length > 0) return;
+    payYear.months.forEach((month, idx) => {
+      const cell = document.createElement('div');
+      cell.className = 'credit-input-cell';
+      const y = month.monthIndex === 11 ? payYear.year - 1 : payYear.year;
+      const label = document.createElement('label');
+      label.textContent = MONTH_NAMES[month.monthIndex] + " '" + String(y).slice(-2);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.max = String(MAX_CREDIT_HARD);
+      input.step = '0.01';
+      input.dataset.monthIdx = String(idx);
+      input.addEventListener('input', () => {
+        const val = Math.max(0, Math.min(MAX_CREDIT_HARD, Number(input.value) || 0));
+        payYear.months[idx].credit = val;
+        renderChart();
+        updateTotals();
+      });
+      input.addEventListener('change', () => {
+        const val = Math.max(0, Math.min(MAX_CREDIT_HARD, Number(input.value) || 0));
+        payYear.months[idx].credit = val;
+        input.value = val.toFixed(2);
+        renderChart();
+        updateTotals();
+      });
+      cell.appendChild(label);
+      cell.appendChild(input);
+      creditInputsRow.appendChild(cell);
+    });
+  }
+
+  function updateCreditInputs() {
+    if (!payYear || !creditInputsRow) return;
+    const inputs = creditInputsRow.querySelectorAll('input[data-month-idx]');
+    inputs.forEach((input) => {
+      // Don't overwrite the input that has focus so the user can type multi-digit values
+      if (document.activeElement === input) return;
+      const idx = parseInt(input.dataset.monthIdx, 10);
+      if (payYear.months[idx]) input.value = payYear.months[idx].credit.toFixed(2);
+    });
   }
 
   function computeMonthTotal(month) {
@@ -373,6 +439,7 @@
     const total = payYear.months.reduce((sum, month) => sum + computeMonthTotal(month), 0);
     currentTotalEl.textContent = formatMoney(total);
     if (chartResultIncomeEl) chartResultIncomeEl.textContent = formatMoney(total);
+    if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = (goal != null && !isNaN(goal)) ? formatMoney(goal) : '—';
     if (goal != null && !isNaN(goal)) {
       const remaining = goal - total;
       remainingGoalEl.textContent = formatMoney(Math.abs(remaining));
@@ -385,6 +452,7 @@
 
   goalInput.addEventListener('input', () => {
     goal = parseGoalInput(goalInput.value);
+    if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = (goal != null && !isNaN(goal)) ? formatMoney(goal) : '—';
     updateTotals();
     if (payYear) renderChart();
   });
@@ -395,6 +463,7 @@
   // Default annual income goal to 400k
   goalInput.value = formatIntegerWithCommas(400000);
   goal = 400000;
+  if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = formatMoney(400000);
   if (payYear) {
     updateTotals();
     renderChart();
@@ -417,4 +486,51 @@
       updateTotals();
     }
   });
+
+  // Draggable target line: moving it updates the targeted income goal (mouse + touch)
+  if (chartTargetLine) {
+    function startTargetLineDrag(e) {
+      if (!payYear || !chartTargetLine.classList.contains('visible')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const wrap = chartTargetLine.parentElement;
+      if (!wrap) return;
+      const avgPay = payYear.months.reduce((s, m) => s + (m.payRate || 0), 0) / 12;
+      const bid = Number(bidPeriodsInput.value) || 1;
+      const pct = Number(percentageInput.value) / 100 || 1;
+      if (avgPay <= 0 || bid <= 0 || pct <= 0) return;
+      const getClientY = (ev) => (ev.clientY != null ? ev.clientY : (ev.touches && ev.touches[0] ? ev.touches[0].clientY : 0));
+
+      const onMove = (moveE) => {
+        const wrapRect = wrap.getBoundingClientRect();
+        let topPx = getClientY(moveE) - wrapRect.top;
+        topPx = Math.max(0, Math.min(CHART_HEIGHT_PX, topPx));
+        const targetCredit = (CHART_HEIGHT_PX - topPx) / CHART_HEIGHT_PX * currentChartMaxScale;
+        const targetCreditClamped = Math.max(0, Math.min(MAX_CREDIT_HARD, targetCredit));
+        goal = Math.round(targetCreditClamped * 12 * avgPay * bid * pct);
+        goalInput.value = formatIntegerWithCommas(goal);
+        if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = formatMoney(goal);
+        chartTargetLine.style.top = topPx + 'px';
+        chartTargetLine.title = 'Drag to adjust target income. Target avg: ' + targetCreditClamped.toFixed(1) + ' hrs/month';
+        if (targetLegendText) targetLegendText.textContent = 'Target avg: ' + targetCreditClamped.toFixed(1) + ' hrs to reach goal';
+        updateTotals();
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove, { passive: false });
+        document.removeEventListener('touchend', onUp);
+        document.removeEventListener('touchcancel', onUp);
+        renderChart();
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onUp);
+      document.addEventListener('touchcancel', onUp);
+      onMove(e);
+    }
+    chartTargetLine.addEventListener('mousedown', startTargetLineDrag);
+    chartTargetLine.addEventListener('touchstart', startTargetLineDrag, { passive: false });
+  }
 })();

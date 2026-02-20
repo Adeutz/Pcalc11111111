@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#7baaf7">
+  <meta name="description" content="Plan your pay year (Dec–Nov) and adjust credit per month to reach your income goal.">
   <title>Pay Calculator</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -55,9 +58,15 @@
     <section class="chart-section" id="chartSection" style="display: none;">
       <div class="chart-section-header">
         <h2>3. Adjust credit hours per month</h2>
-        <div class="chart-result-income">
-          <span class="chart-result-label">Resulting income:</span>
-          <strong id="chartResultIncome">$0.00</strong>
+        <div class="chart-income-block">
+          <div class="chart-targeted-income">
+            <span class="chart-result-label">Targeted income:</span>
+            <strong id="chartTargetIncome">—</strong>
+          </div>
+          <div class="chart-result-income">
+            <span class="chart-result-label">Resulting income:</span>
+            <strong id="chartResultIncome">$0.00</strong>
+          </div>
         </div>
       </div>
       <p class="section-hint">Drag the bars up/down or click to edit. Each bar shows credit hours needed for that month.</p>
@@ -86,9 +95,21 @@
           <span id="targetLegendText">Target avg to reach goal</span>
         </div>
       </div>
+
+      <div class="credit-inputs-section" id="creditInputsSection">
+        <h3 class="credit-inputs-title">Credit hours by month (or use the bars above)</h3>
+        <div class="credit-inputs-row" id="creditInputsRow">
+          <!-- Filled by JS -->
+        </div>
+      </div>
     </section>
   </div>
 
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function() {});
+    }
+  </script>
 </body>
 </html>

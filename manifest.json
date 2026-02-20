@@ -1,0 +1,17 @@
+{
+  "name": "Pay Calculator",
+  "short_name": "Pay Calculator",
+  "description": "Plan your pay year (Dec–Nov) and adjust credit per month to reach your income goal.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1a1d23",
+  "theme_color": "#7baaf7",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

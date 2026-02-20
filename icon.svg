@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <rect width="192" height="192" rx="24" fill="#252830"/>
+  <text x="96" y="118" font-family="system-ui, sans-serif" font-size="72" font-weight="700" fill="#7baaf7" text-anchor="middle">$</text>
+  <text x="96" y="168" font-family="system-ui, sans-serif" font-size="24" fill="#9aa0a6" text-anchor="middle">Pay</text>
+</svg>
