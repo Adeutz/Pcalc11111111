@@ -1,4 +1,4 @@
-const CACHE = 'pcalc11111111-v2';
+const CACHE = 'pcalc11111111-v3';
 const ASSETS = ['index.html', 'styles.css', 'app.js', 'icon.svg', 'manifest.json'];
 
 self.addEventListener('install', (e) => {

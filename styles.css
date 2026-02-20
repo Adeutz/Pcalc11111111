@@ -730,6 +730,126 @@ body {
   border-color: var(--accent);
 }
 
+/* Scenarios Section */
+.scenarios-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 1.25rem;
+}
+
+.scenarios-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.scenarios-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.scenario-slots {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.scenario-slot {
+  flex: 1;
+  min-width: 220px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.scenario-slot.saved {
+  border-color: var(--accent);
+  border-width: 1px;
+}
+
+.scenario-slot.empty {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  opacity: 0.7;
+}
+
+.scenario-empty-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.scenario-name-row {
+  display: flex;
+}
+
+.scenario-name-input {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 0.15rem 0;
+  transition: border-color 0.15s;
+}
+
+.scenario-name-input:hover,
+.scenario-name-input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+.scenario-summary {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.scenario-summary strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.scenario-timestamp {
+  font-size: 0.75rem;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.scenario-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  opacity: 0.7;
+}
+
+.btn-danger-outline:hover {
+  background: rgba(229, 115, 115, 0.12);
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   .goal-row {
     flex-direction: column;
@@ -745,6 +865,15 @@ body {
   }
 
   .chart-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .scenario-slots {
+    flex-direction: column;
+  }
+
+  .scenarios-header {
     flex-direction: column;
     align-items: flex-start;
   }

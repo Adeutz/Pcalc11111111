@@ -24,8 +24,12 @@
   const chartResultIncomeEl = document.getElementById('chartResultIncome');
   const chartTargetIncomeEl = document.getElementById('chartTargetIncome');
   const creditInputsRow = document.getElementById('creditInputsRow');
+  const scenariosSection = document.getElementById('scenariosSection');
+  const scenarioSlots = document.getElementById('scenarioSlots');
+  const compareScenariosBtn = document.getElementById('compareScenariosBtn');
 
   const STORAGE_KEY = 'pcalc11111111-data';
+  const SCENARIOS_KEY = 'pcalc11111111-scenarios';
   const COLLAPSE_KEY_PREFIX = 'pcalc11111111-collapse-';
   const STORAGE_KEY_LEGACY = 'pay-calculator-data';
   const COLLAPSE_KEY_LEGACY_PREFIX = 'pay-calculator-collapse-';
@@ -113,6 +117,7 @@
         }
         payRatesSection.style.display = 'block';
         chartSection.style.display = 'block';
+        if (scenariosSection) scenariosSection.style.display = 'block';
         renderPayRateGroups();
         updatePayRatesInMonths();
         renderChart();
@@ -166,6 +171,7 @@
     };
     payRatesSection.style.display = 'block';
     chartSection.style.display = 'block';
+    if (scenariosSection) scenariosSection.style.display = 'block';
     if (payRateGroupsData.length === 0) {
       addPayRateGroup(); // Pay Rate 1 (Dec, Jan, Feb)
       addPayRateGroup(); // Pay Rate 2 (remaining months) – visible right away
@@ -699,4 +705,279 @@
     chartTargetLine.addEventListener('mousedown', startTargetLineDrag);
     chartTargetLine.addEventListener('touchstart', startTargetLineDrag, { passive: false });
   }
+
+  // ─── Scenarios ───────────────────────────────────────────────────────
+  const MAX_SCENARIOS = 3;
+  let scenarios = [];
+
+  function loadScenarios() {
+    try {
+      const raw = localStorage.getItem(SCENARIOS_KEY);
+      if (raw) scenarios = JSON.parse(raw) || [];
+    } catch (e) { scenarios = []; }
+  }
+
+  function saveScenarios() {
+    try {
+      localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+      showSavedIndicator();
+    } catch (e) {}
+  }
+
+  function saveToScenarioSlot(index) {
+    const state = getState();
+    const existing = scenarios[index];
+    scenarios[index] = {
+      name: (existing && existing.name) ? existing.name : 'Scenario ' + (index + 1),
+      data: state,
+      savedAt: Date.now()
+    };
+    saveScenarios();
+    renderScenarioSlots();
+  }
+
+  function loadFromScenarioSlot(index) {
+    const sc = scenarios[index];
+    if (!sc || !sc.data) return;
+    const state = sc.data;
+
+    if (state.goal != null && !isNaN(state.goal)) {
+      goal = state.goal;
+      goalInput.value = formatIntegerWithCommas(goal);
+      if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = formatMoney(goal);
+    }
+    if (Array.isArray(state.payRateGroupsData) && state.payRateGroupsData.length > 0) {
+      payRateGroupsData = state.payRateGroupsData.map(g => ({ id: g.id, payRate: g.payRate, months: g.months.slice() }));
+    }
+    if (state.payYear && Array.isArray(state.payYear.months) && state.payYear.months.length === 12) {
+      payYear = {
+        year: state.payYear.year,
+        months: state.payYear.months.map(m => ({
+          monthIndex: m.monthIndex,
+          year: m.year,
+          payRate: m.payRate,
+          credit: typeof m.credit === 'number' ? m.credit : 70,
+          bidPeriods: typeof m.bidPeriods === 'number' ? m.bidPeriods : 1,
+          percentage: typeof m.percentage === 'number' ? m.percentage : 1
+        }))
+      };
+      const first = payYear.months[0];
+      if (first) {
+        bidPeriodsInput.value = first.bidPeriods || 1;
+        percentageInput.value = Math.round((first.percentage || 1) * 100);
+      }
+    }
+
+    payRatesSection.style.display = 'block';
+    chartSection.style.display = 'block';
+    if (scenariosSection) scenariosSection.style.display = 'block';
+
+    creditInputsRow.innerHTML = '';
+    renderPayRateGroups();
+    updatePayRatesInMonths();
+    renderChart();
+    updateTotals();
+    save();
+  }
+
+  function deleteScenarioSlot(index) {
+    scenarios[index] = null;
+    scenarios = scenarios.slice(0, Math.max(...scenarios.map((s, i) => s ? i + 1 : 0), 0));
+    saveScenarios();
+    renderScenarioSlots();
+  }
+
+  function renameScenarioSlot(index, newName) {
+    if (scenarios[index]) {
+      scenarios[index].name = newName || ('Scenario ' + (index + 1));
+      saveScenarios();
+    }
+  }
+
+  function renderScenarioSlots() {
+    if (!scenarioSlots) return;
+    scenarioSlots.innerHTML = '';
+
+    const savedCount = scenarios.filter(s => s != null).length;
+    const nextEmpty = scenarios.length < MAX_SCENARIOS ? scenarios.length : scenarios.findIndex(s => s == null);
+
+    for (let i = 0; i < MAX_SCENARIOS; i++) {
+      const sc = scenarios[i] || null;
+      const slot = document.createElement('div');
+      slot.className = 'scenario-slot' + (sc ? ' saved' : ' empty');
+
+      if (sc) {
+        const nameRow = document.createElement('div');
+        nameRow.className = 'scenario-name-row';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'scenario-name-input';
+        nameInput.value = sc.name;
+        nameInput.maxLength = 30;
+        nameInput.addEventListener('change', () => { renameScenarioSlot(i, nameInput.value); });
+        nameRow.appendChild(nameInput);
+        slot.appendChild(nameRow);
+
+        const summary = document.createElement('div');
+        summary.className = 'scenario-summary';
+        const scGoal = sc.data.goal;
+        const scTotal = sc.data.payYear ? sc.data.payYear.months.reduce((sum, m) => {
+          return sum + (m.payRate || 0) * (m.credit || 0) * (m.bidPeriods || 1) * (m.percentage || 1);
+        }, 0) : 0;
+        summary.innerHTML =
+          '<span>Goal: <strong>' + formatMoney(scGoal || 0) + '</strong></span>' +
+          '<span>Income: <strong>' + formatMoney(scTotal) + '</strong></span>';
+        slot.appendChild(summary);
+
+        const ts = document.createElement('div');
+        ts.className = 'scenario-timestamp';
+        ts.textContent = 'Saved ' + new Date(sc.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        slot.appendChild(ts);
+
+        const actions = document.createElement('div');
+        actions.className = 'scenario-actions';
+        const loadBtn = document.createElement('button');
+        loadBtn.className = 'btn btn-primary btn-sm';
+        loadBtn.textContent = 'Load';
+        loadBtn.addEventListener('click', () => { loadFromScenarioSlot(i); });
+        const overwriteBtn = document.createElement('button');
+        overwriteBtn.className = 'btn btn-secondary btn-sm';
+        overwriteBtn.textContent = 'Overwrite';
+        overwriteBtn.addEventListener('click', () => { saveToScenarioSlot(i); });
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger-outline btn-sm';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => {
+          if (confirm('Delete "' + (sc.name || 'Scenario') + '"?')) deleteScenarioSlot(i);
+        });
+        actions.appendChild(loadBtn);
+        actions.appendChild(overwriteBtn);
+        actions.appendChild(deleteBtn);
+        slot.appendChild(actions);
+      } else {
+        const emptyLabel = document.createElement('div');
+        emptyLabel.className = 'scenario-empty-label';
+        emptyLabel.textContent = 'Scenario ' + (i + 1) + ' — empty';
+        slot.appendChild(emptyLabel);
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-primary btn-sm';
+        saveBtn.textContent = 'Save Current';
+        saveBtn.addEventListener('click', () => { saveToScenarioSlot(i); });
+        slot.appendChild(saveBtn);
+      }
+
+      scenarioSlots.appendChild(slot);
+    }
+
+    if (compareScenariosBtn) {
+      compareScenariosBtn.disabled = savedCount < 2;
+    }
+  }
+
+  function generateComparisonPDF() {
+    const active = scenarios.filter(s => s != null);
+    if (active.length < 2) return;
+
+    const monthOrder = PAY_YEAR_MONTHS;
+    const colWidth = Math.floor(100 / active.length);
+
+    let html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+    html += '<title>Scenario Comparison</title>';
+    html += '<style>';
+    html += 'body{font-family:"Segoe UI",system-ui,sans-serif;margin:2rem;color:#222;font-size:13px}';
+    html += 'h1{font-size:1.4rem;margin:0 0 0.25rem}';
+    html += '.subtitle{color:#666;margin:0 0 1.5rem;font-size:0.9rem}';
+    html += '.cols{display:flex;gap:1.5rem}';
+    html += '.col{flex:1;border:1px solid #ccc;border-radius:8px;padding:1rem}';
+    html += '.col h2{margin:0 0 0.5rem;font-size:1.1rem;color:#333}';
+    html += '.meta{display:flex;gap:1.5rem;margin-bottom:0.75rem;font-size:0.85rem;color:#555}';
+    html += '.meta strong{color:#222}';
+    html += 'table{width:100%;border-collapse:collapse;font-size:0.82rem}';
+    html += 'th,td{padding:4px 6px;border-bottom:1px solid #e0e0e0;text-align:right}';
+    html += 'th{background:#f5f5f5;font-weight:600;color:#444}';
+    html += 'th:first-child,td:first-child{text-align:left}';
+    html += 'tr.total-row td{border-top:2px solid #333;font-weight:700}';
+    html += '.met{color:#2e7d32}.under{color:#c62828}';
+    html += '.rates-info{font-size:0.8rem;color:#555;margin-bottom:0.5rem}';
+    html += '.rates-info strong{color:#222}';
+    html += '@media print{body{margin:0.5rem}h1{font-size:1.2rem}.col{page-break-inside:avoid}}';
+    html += '</style></head><body>';
+    html += '<h1>Scenario Comparison</h1>';
+    html += '<p class="subtitle">Generated ' + new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) + '</p>';
+    html += '<div class="cols">';
+
+    active.forEach(sc => {
+      const d = sc.data;
+      const months = d.payYear ? d.payYear.months : [];
+      const scGoal = d.goal || 0;
+      let total = 0;
+
+      html += '<div class="col">';
+      html += '<h2>' + escapeHtml(sc.name) + '</h2>';
+
+      const rates = d.payRateGroupsData || [];
+      if (rates.length > 0) {
+        html += '<div class="rates-info">';
+        rates.forEach((r, ri) => {
+          const rMonths = r.months.map(mi => MONTH_NAMES[mi]).join(', ');
+          html += 'Pay Rate ' + (ri + 1) + ': <strong>$' + r.payRate.toFixed(2) + '</strong> (' + rMonths + ')<br>';
+        });
+        if (months.length > 0) {
+          html += 'Bid periods: <strong>' + (months[0].bidPeriods || 1) + '</strong> &middot; ';
+          html += 'Percentage: <strong>' + Math.round((months[0].percentage || 1) * 100) + '%</strong>';
+        }
+        html += '</div>';
+      }
+
+      html += '<div class="meta">';
+      html += '<span>Goal: <strong>' + formatMoney(scGoal) + '</strong></span>';
+      html += '</div>';
+
+      html += '<table><thead><tr><th>Month</th><th>Rate</th><th>Credit Hrs</th><th>Monthly Income</th></tr></thead><tbody>';
+
+      monthOrder.forEach(mi => {
+        const m = months.find(x => x.monthIndex === mi);
+        if (!m) return;
+        const monthIncome = (m.payRate || 0) * (m.credit || 0) * (m.bidPeriods || 1) * (m.percentage || 1);
+        total += monthIncome;
+        const yr = m.year || '';
+        html += '<tr>';
+        html += '<td>' + MONTH_NAMES[m.monthIndex] + " '" + String(yr).slice(-2) + '</td>';
+        html += '<td>$' + (m.payRate || 0).toFixed(2) + '</td>';
+        html += '<td>' + (m.credit || 0).toFixed(2) + '</td>';
+        html += '<td>' + formatMoney(monthIncome) + '</td>';
+        html += '</tr>';
+      });
+
+      const diff = total - scGoal;
+      const cls = diff >= 0 ? 'met' : 'under';
+      html += '<tr class="total-row"><td>Total</td><td></td><td></td><td>' + formatMoney(total) + '</td></tr>';
+      html += '<tr><td>Remaining</td><td></td><td></td><td class="' + cls + '">' + (diff >= 0 ? '+' : '-') + formatMoney(Math.abs(diff)) + '</td></tr>';
+      html += '</tbody></table>';
+      html += '</div>';
+    });
+
+    html += '</div></body></html>';
+
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => { win.print(); }, 400);
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  if (compareScenariosBtn) {
+    compareScenariosBtn.addEventListener('click', generateComparisonPDF);
+  }
+
+  loadScenarios();
+  renderScenarioSlots();
 })();
