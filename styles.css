@@ -468,6 +468,45 @@ body {
   color: #fff;
 }
 
+.chart-hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.chart-hint-row .section-hint {
+  margin-bottom: 0;
+}
+
+.chart-lock-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.chart-lock-toggle input {
+  display: none;
+}
+
+.lock-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.chart-lock-toggle:hover .lock-icon {
+  opacity: 1;
+}
+
+.chart-lock-toggle input:checked ~ .lock-icon {
+  opacity: 1;
+}
+
 .chart-container {
   display: flex;
   gap: 0.75rem;

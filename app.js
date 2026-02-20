@@ -323,6 +323,25 @@
     });
   }
 
+  let chartLocked = false;
+  const chartLockToggle = document.getElementById('chartLockToggle');
+  const lockIcon = document.getElementById('lockIcon');
+
+  function setChartLocked(locked) {
+    chartLocked = locked;
+    if (chartLockToggle) chartLockToggle.checked = locked;
+    if (lockIcon) lockIcon.textContent = locked ? '\u{1F512}' : '\u{1F513}';
+    try { localStorage.setItem(COLLAPSE_KEY_PREFIX + 'chartLock', locked ? '1' : '0'); } catch (e) {}
+  }
+
+  if (chartLockToggle) {
+    try {
+      const stored = localStorage.getItem(COLLAPSE_KEY_PREFIX + 'chartLock');
+      if (stored === '1') setChartLocked(true);
+    } catch (e) {}
+    chartLockToggle.addEventListener('change', () => { setChartLocked(chartLockToggle.checked); });
+  }
+
   const CHART_HEIGHT_PX = 280;
   const MAX_CREDIT_HARD = 350;
   const SCALE_OPTIONS = [200, 250, 300, 350];
@@ -418,6 +437,7 @@
       };
 
       function startBarDrag(e) {
+        if (chartLocked) return;
         e.preventDefault();
         e.stopPropagation();
         const clientY = e.clientY != null ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
@@ -661,6 +681,7 @@
   // Draggable target line: moving it updates the targeted income goal (mouse + touch)
   if (chartTargetLine) {
     function startTargetLineDrag(e) {
+      if (chartLocked) return;
       if (!payYear || !chartTargetLine.classList.contains('visible')) return;
       e.preventDefault();
       e.stopPropagation();

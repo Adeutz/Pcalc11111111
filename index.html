@@ -84,7 +84,13 @@
           </div>
         </div>
       </div>
-      <p class="section-hint">Drag the bars up/down or click to edit. Each bar shows credit hours needed for that month.</p>
+      <div class="chart-hint-row">
+        <p class="section-hint">Drag the bars up/down or click to edit. Each bar shows credit hours needed for that month.</p>
+        <label class="chart-lock-toggle" title="Lock bars to prevent accidental drags">
+          <input type="checkbox" id="chartLockToggle">
+          <span class="lock-icon" id="lockIcon">&#x1F513;</span>
+        </label>
+      </div>
       
       <div class="chart-container" id="chartContainer">
         <div class="chart-y-axis" id="chartYAxis">
