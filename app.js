@@ -43,8 +43,21 @@
       const state = getState();
       if (state.payYear || state.payRateGroupsData.length > 0 || (state.goal != null && !isNaN(state.goal))) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        showSavedIndicator();
       }
     } catch (err) { /* ignore quota / private mode */ }
+  }
+
+  let saveIndicatorTimer = null;
+  function showSavedIndicator() {
+    const el = document.getElementById('saveIndicator');
+    if (!el) return;
+    el.classList.add('visible');
+    if (saveIndicatorTimer) clearTimeout(saveIndicatorTimer);
+    saveIndicatorTimer = setTimeout(function () {
+      el.classList.remove('visible');
+      saveIndicatorTimer = null;
+    }, 1800);
   }
 
   function load() {
