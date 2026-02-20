@@ -451,6 +451,7 @@
         input.min = '0';
         input.max = String(MAX_CREDIT_HARD);
         input.step = '0.01';
+        input.setAttribute('inputmode', 'decimal');
         input.value = month.credit.toFixed(2);
         bar.appendChild(input);
         input.focus();
@@ -499,6 +500,7 @@
       input.min = '0';
       input.max = String(MAX_CREDIT_HARD);
       input.step = '0.01';
+      input.setAttribute('inputmode', 'decimal');
       input.dataset.monthIdx = String(idx);
       input.addEventListener('input', () => {
         const val = Math.max(0, Math.min(MAX_CREDIT_HARD, Number(input.value) || 0));
