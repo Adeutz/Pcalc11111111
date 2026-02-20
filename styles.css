@@ -531,6 +531,11 @@ body {
 
 .chart-y-axis .y-tick {
   line-height: 1;
+  min-height: 2px;
+}
+
+.chart-y-axis .y-tick:empty {
+  font-size: 0;
 }
 
 .chart-area-wrap {

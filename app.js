@@ -376,10 +376,10 @@
 
     if (chartYAxis) {
       chartYAxis.innerHTML = '';
-      for (let v = maxScale; v >= 0; v -= 50) {
+      for (let v = maxScale; v >= 0; v -= 10) {
         const tick = document.createElement('div');
         tick.className = 'y-tick';
-        tick.textContent = v;
+        tick.textContent = (v % 50 === 0) ? v : '';
         chartYAxis.appendChild(tick);
       }
     }
@@ -405,7 +405,7 @@
       }
     }
 
-    const gridStepPx = CHART_HEIGHT_PX / (maxScale / 50);
+    const gridStepPx = CHART_HEIGHT_PX / (maxScale / 10);
     if (chartBars) chartBars.style.setProperty('--grid-step-px', gridStepPx + 'px');
 
     chartBars.innerHTML = '';
