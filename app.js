@@ -6,6 +6,7 @@
 
   const goalInput = document.getElementById('goalInput');
   const initializeYearBtn = document.getElementById('initializeYear');
+  const refreshBtn = document.getElementById('refreshBtn');
   const currentTotalEl = document.getElementById('currentTotal');
   const remainingGoalEl = document.getElementById('remainingGoal');
   const payRatesSection = document.getElementById('payRatesSection');
@@ -572,6 +573,7 @@
 
   initializeYearBtn.addEventListener('click', initializePayYear);
   addPayRateGroupBtn.addEventListener('click', addPayRateGroup);
+  if (refreshBtn) refreshBtn.addEventListener('click', function () { location.reload(); });
 
   bidPeriodsInput.addEventListener('input', () => {
     if (payYear) {
