@@ -663,7 +663,7 @@
 
   initializeYearBtn.addEventListener('click', initializePayYear);
   addPayRateGroupBtn.addEventListener('click', addPayRateGroup);
-  if (refreshBtn) refreshBtn.addEventListener('click', function () { location.reload(); });
+  // Refresh button handler is in index.html (clears SW caches before reloading)
 
   bidPeriodsInput.addEventListener('input', () => {
     if (payYear) {

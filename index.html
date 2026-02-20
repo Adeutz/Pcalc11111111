@@ -144,6 +144,21 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(function() {});
     }
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+      if ('serviceWorker' in navigator) {
+        caches.keys().then(function(keys) {
+          return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+        }).then(function() {
+          return navigator.serviceWorker.getRegistration();
+        }).then(function(reg) {
+          if (reg) return reg.unregister();
+        }).then(function() {
+          location.reload(true);
+        });
+      } else {
+        location.reload(true);
+      }
+    });
   </script>
 </body>
 </html>
