@@ -333,7 +333,15 @@ body {
 
 .chart-targeted-income strong {
   font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.chart-targeted-income.under strong {
   color: #e53935;
+}
+
+.chart-targeted-income.met strong {
+  color: #4caf50;
 }
 
 .chart-result-income strong {

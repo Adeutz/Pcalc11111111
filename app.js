@@ -439,7 +439,16 @@
     const total = payYear.months.reduce((sum, month) => sum + computeMonthTotal(month), 0);
     currentTotalEl.textContent = formatMoney(total);
     if (chartResultIncomeEl) chartResultIncomeEl.textContent = formatMoney(total);
-    if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = (goal != null && !isNaN(goal)) ? formatMoney(goal) : '—';
+    if (chartTargetIncomeEl) {
+      chartTargetIncomeEl.textContent = (goal != null && !isNaN(goal)) ? formatMoney(goal) : '—';
+      const targetedBlock = chartTargetIncomeEl.closest('.chart-targeted-income');
+      if (targetedBlock) {
+        targetedBlock.classList.remove('under', 'met');
+        if (goal != null && !isNaN(goal)) {
+          targetedBlock.classList.add(total < goal ? 'under' : 'met');
+        }
+      }
+    }
     if (goal != null && !isNaN(goal)) {
       const remaining = goal - total;
       remainingGoalEl.textContent = formatMoney(Math.abs(remaining));
