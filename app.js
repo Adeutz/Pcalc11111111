@@ -24,9 +24,76 @@
   const chartTargetIncomeEl = document.getElementById('chartTargetIncome');
   const creditInputsRow = document.getElementById('creditInputsRow');
 
+  const STORAGE_KEY = 'pay-calculator-data';
+
   let goal = null;
   let payYear = null;
   let payRateGroupsData = [];
+
+  function getState() {
+    return {
+      goal,
+      payYear: payYear ? { year: payYear.year, months: payYear.months.map(m => ({ ...m })) } : null,
+      payRateGroupsData: payRateGroupsData.map(g => ({ id: g.id, payRate: g.payRate, months: g.months.slice() }))
+    };
+  }
+
+  function save() {
+    try {
+      const state = getState();
+      if (state.payYear || state.payRateGroupsData.length > 0 || (state.goal != null && !isNaN(state.goal))) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+    } catch (err) { /* ignore quota / private mode */ }
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const state = JSON.parse(raw);
+      if (!state) return false;
+
+      if (state.goal != null && !isNaN(state.goal)) {
+        goal = state.goal;
+        goalInput.value = formatIntegerWithCommas(goal);
+        if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = formatMoney(goal);
+      }
+
+      if (Array.isArray(state.payRateGroupsData) && state.payRateGroupsData.length > 0) {
+        payRateGroupsData = state.payRateGroupsData.map(g => ({ id: g.id, payRate: g.payRate, months: g.months.slice() }));
+      }
+
+      if (state.payYear && Array.isArray(state.payYear.months) && state.payYear.months.length === 12) {
+        payYear = {
+          year: state.payYear.year,
+          months: state.payYear.months.map(m => ({
+            monthIndex: m.monthIndex,
+            year: m.year,
+            payRate: m.payRate,
+            credit: typeof m.credit === 'number' ? m.credit : 70,
+            bidPeriods: typeof m.bidPeriods === 'number' ? m.bidPeriods : 1,
+            percentage: typeof m.percentage === 'number' ? m.percentage : 1
+          }))
+        };
+        const first = payYear.months[0];
+        if (first) {
+          bidPeriodsInput.value = first.bidPeriods || 1;
+          percentageInput.value = Math.round((first.percentage || 1) * 100);
+        }
+        payRatesSection.style.display = 'block';
+        chartSection.style.display = 'block';
+        renderPayRateGroups();
+        updatePayRatesInMonths();
+        renderChart();
+        updateTotals();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      return false;
+    }
+  }
 
   function formatMoney(n) {
     return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -76,6 +143,7 @@
     updatePayRatesInMonths();
     renderChart();
     updateTotals();
+    save();
   }
 
   function addPayRateGroup() {
@@ -98,6 +166,7 @@
       renderChart();
       updateTotals();
     }
+    save();
   }
 
   function syncInverseMonths(changedGroupId) {
@@ -121,6 +190,7 @@
       renderChart();
       updateTotals();
     }
+    save();
   }
 
   function renderPayRateGroups() {
@@ -157,6 +227,7 @@
         updatePayRatesInMonths();
         renderChart();
         updateTotals();
+        save();
       });
       header.appendChild(label);
       header.appendChild(payInput);
@@ -182,6 +253,7 @@
           updatePayRatesInMonths();
           renderChart();
           updateTotals();
+          save();
         });
         const labelEl = document.createElement('label');
         labelEl.htmlFor = checkbox.id;
@@ -330,6 +402,7 @@
           document.removeEventListener('touchend', onUp);
           document.removeEventListener('touchcancel', onUp);
           renderChart();
+          save();
         };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -359,6 +432,7 @@
           updateBarHeight();
           updateTotals();
           renderChart();
+          save();
         };
         input.addEventListener('blur', finishEdit);
         input.addEventListener('keydown', (e) => {
@@ -401,6 +475,7 @@
         payYear.months[idx].credit = val;
         renderChart();
         updateTotals();
+        save();
       });
       input.addEventListener('change', () => {
         const val = Math.max(0, Math.min(MAX_CREDIT_HARD, Number(input.value) || 0));
@@ -408,6 +483,7 @@
         input.value = val.toFixed(2);
         renderChart();
         updateTotals();
+        save();
       });
       cell.appendChild(label);
       cell.appendChild(input);
@@ -464,18 +540,21 @@
     if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = (goal != null && !isNaN(goal)) ? formatMoney(goal) : '—';
     updateTotals();
     if (payYear) renderChart();
+    save();
   });
   goalInput.addEventListener('blur', () => {
     if (goal != null && !isNaN(goal)) goalInput.value = formatIntegerWithCommas(goal);
   });
 
-  // Default annual income goal to 400k
-  goalInput.value = formatIntegerWithCommas(400000);
-  goal = 400000;
-  if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = formatMoney(400000);
-  if (payYear) {
-    updateTotals();
-    renderChart();
+  // Load saved data or default to 400k goal
+  if (!load()) {
+    goalInput.value = formatIntegerWithCommas(400000);
+    goal = 400000;
+    if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = formatMoney(400000);
+    if (payYear) {
+      updateTotals();
+      renderChart();
+    }
   }
 
   initializeYearBtn.addEventListener('click', initializePayYear);
@@ -486,6 +565,7 @@
       payYear.months.forEach(m => { m.bidPeriods = Number(bidPeriodsInput.value) || 1; });
       renderChart();
       updateTotals();
+      save();
     }
   });
   percentageInput.addEventListener('input', () => {
@@ -493,6 +573,7 @@
       payYear.months.forEach(m => { m.percentage = Number(percentageInput.value) / 100 || 1; });
       renderChart();
       updateTotals();
+      save();
     }
   });
 
@@ -531,6 +612,7 @@
         document.removeEventListener('touchend', onUp);
         document.removeEventListener('touchcancel', onUp);
         renderChart();
+        save();
       };
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
