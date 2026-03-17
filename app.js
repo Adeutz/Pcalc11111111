@@ -885,7 +885,7 @@
   }
 
   // ─── Scenarios ───────────────────────────────────────────────────────
-  const MAX_SCENARIOS = 3;
+  const MAX_SCENARIOS = 10;
   let scenarios = [];
 
   function loadScenarios() {
