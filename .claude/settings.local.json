@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"c:\\\\Users\\\\Alex22Build\\\\Documents\\\\GPTFILES\\\\PayCalculator\\\\index.html\")"
+    ]
+  }
+}

@@ -408,6 +408,78 @@ body {
   font-size: 0.9rem;
 }
 
+.calc-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.calc-mode-toggle input {
+  display: none;
+}
+
+.calc-mode-toggle input:checked ~ .toggle-track {
+  background: var(--accent);
+}
+
+.calc-mode-toggle input:checked ~ .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.calc-mode-toggle input:checked ~ .toggle-label {
+  color: var(--accent);
+}
+
+.irs-limits-row {
+  border-top: 1px dashed var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.irs-limit-input {
+  width: 100px;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.spill-cash-summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+}
+
+.spill-cash-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.35rem 1rem;
+  justify-content: start;
+  align-items: baseline;
+}
+
+.spill-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.spill-cash-grid strong {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.spill-highlight {
+  color: var(--warning) !important;
+}
+
 /* Chart Section */
 .chart-section {
   background: var(--surface);

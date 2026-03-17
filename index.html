@@ -61,9 +61,33 @@
             <input type="number" id="bidPeriodsInput" min="1" max="12" value="1" step="1">
           </div>
           <div class="setting-row">
+            <label class="calc-mode-toggle" title="Switch between percentage multiplier and retirement spill cash mode">
+              <input type="checkbox" id="calcModeToggle">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label" id="calcModeLabel">Retirement mode</span>
+            </label>
+          </div>
+          <div class="setting-row" id="pctMultiplierRow">
             <label for="percentageInput">Percentage multiplier:</label>
             <input type="number" id="percentageInput" min="100" max="150" value="115" step="1">
             <span class="unit">%</span>
+          </div>
+        </div>
+        <div class="other-settings irs-limits-row" id="irsLimitsRow" style="display: none;">
+          <div class="setting-row">
+            <label for="dcRateInput">Company DC rate:</label>
+            <input type="number" id="dcRateInput" min="0" max="50" value="15" step="1">
+            <span class="unit">%</span>
+          </div>
+          <div class="setting-row">
+            <label for="limit415cInput">415(c) limit:</label>
+            <span class="goal-currency">$</span>
+            <input type="text" id="limit415cInput" inputmode="numeric" value="72,000" class="irs-limit-input">
+          </div>
+          <div class="setting-row">
+            <label for="empDeferralInput">Employee deferral:</label>
+            <span class="goal-currency">$</span>
+            <input type="text" id="empDeferralInput" inputmode="numeric" value="24,500" class="irs-limit-input">
           </div>
         </div>
       </div>
@@ -107,6 +131,19 @@
           </div>
         </div>
       </div>
+      <div class="spill-cash-summary" id="spillCashSummary" style="display: none;">
+        <div class="spill-cash-grid">
+          <span class="spill-label">Base pay:</span>
+          <strong id="spillBasePay">$0.00</strong>
+          <span class="spill-label">Employer DC to 401k:</span>
+          <strong id="spillDC401k">$0.00</strong>
+          <span class="spill-label">Spill cash (taxable):</span>
+          <strong id="spillCashAmount" class="spill-highlight">$0.00</strong>
+          <span class="spill-label">Taxable W-2 income:</span>
+          <strong id="spillW2Income">$0.00</strong>
+        </div>
+      </div>
+
       <div class="chart-legend">
         <div class="legend-item">
           <span class="legend-color" style="background: var(--accent);"></span>

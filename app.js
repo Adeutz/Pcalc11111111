@@ -28,6 +28,22 @@
   const scenarioSlots = document.getElementById('scenarioSlots');
   const compareScenariosBtn = document.getElementById('compareScenariosBtn');
 
+  const calcModeToggle = document.getElementById('calcModeToggle');
+  const calcModeLabel = document.getElementById('calcModeLabel');
+  const pctMultiplierRow = document.getElementById('pctMultiplierRow');
+  const irsLimitsRow = document.getElementById('irsLimitsRow');
+  const dcRateInput = document.getElementById('dcRateInput');
+  const limit415cInput = document.getElementById('limit415cInput');
+  const empDeferralInput = document.getElementById('empDeferralInput');
+  const COMP_LIMIT_401A17 = 360000;
+  const spillCashSummary = document.getElementById('spillCashSummary');
+  const spillBasePayEl = document.getElementById('spillBasePay');
+  const spillDC401kEl = document.getElementById('spillDC401k');
+  const spillCashAmountEl = document.getElementById('spillCashAmount');
+  const spillW2IncomeEl = document.getElementById('spillW2Income');
+
+  let retirementMode = false;
+
   const STORAGE_KEY = 'pcalc11111111-data';
   const SCENARIOS_KEY = 'pcalc11111111-scenarios';
   const COLLAPSE_KEY_PREFIX = 'pcalc11111111-collapse-';
@@ -55,7 +71,13 @@
     return {
       goal,
       payYear: payYear ? { year: payYear.year, months: payYear.months.map(m => ({ ...m })) } : null,
-      payRateGroupsData: payRateGroupsData.map(g => ({ id: g.id, payRate: g.payRate, months: g.months.slice() }))
+      payRateGroupsData: payRateGroupsData.map(g => ({ id: g.id, payRate: g.payRate, months: g.months.slice() })),
+      retirementMode: retirementMode,
+      dcRate: dcRateInput ? Number(dcRateInput.value) || 15 : 15,
+      irsLimits: {
+        limit415c: limit415cInput ? parseIRSInput(limit415cInput, 72000) : 72000,
+        empDeferral: empDeferralInput ? parseIRSInput(empDeferralInput, 24500) : 24500
+      }
     };
   }
 
@@ -98,6 +120,12 @@
         payRateGroupsData = state.payRateGroupsData.map(g => ({ id: g.id, payRate: g.payRate, months: g.months.slice() }));
       }
 
+      if (state.dcRate != null && dcRateInput) dcRateInput.value = state.dcRate;
+      if (state.irsLimits) {
+        if (limit415cInput && state.irsLimits.limit415c != null) limit415cInput.value = Number(state.irsLimits.limit415c).toLocaleString('en-US');
+        if (empDeferralInput && state.irsLimits.empDeferral != null) empDeferralInput.value = Number(state.irsLimits.empDeferral).toLocaleString('en-US');
+      }
+
       if (state.payYear && Array.isArray(state.payYear.months) && state.payYear.months.length === 12) {
         payYear = {
           year: state.payYear.year,
@@ -115,6 +143,8 @@
           bidPeriodsInput.value = first.bidPeriods || 1;
           percentageInput.value = Math.round((first.percentage || 1) * 100);
         }
+        // Restore retirement mode after payYear so percentage gets set correctly
+        if (state.retirementMode) setRetirementMode(true);
         payRatesSection.style.display = 'block';
         chartSection.style.display = 'block';
         if (scenariosSection) scenariosSection.style.display = 'block';
@@ -342,6 +372,34 @@
     chartLockToggle.addEventListener('change', () => { setChartLocked(chartLockToggle.checked); });
   }
 
+  function setRetirementMode(enabled) {
+    retirementMode = enabled;
+    if (calcModeToggle) calcModeToggle.checked = enabled;
+    if (calcModeLabel) calcModeLabel.textContent = enabled ? 'Retirement mode' : 'Percentage mode';
+    if (pctMultiplierRow) pctMultiplierRow.style.display = enabled ? 'none' : 'flex';
+    if (irsLimitsRow) irsLimitsRow.style.display = enabled ? 'flex' : 'none';
+    // In retirement mode, force percentage to 1.0 (base pay only — spill cash shown separately)
+    if (payYear) {
+      if (enabled) {
+        payYear.months.forEach(m => { m.percentage = 1; });
+      } else {
+        payYear.months.forEach(m => { m.percentage = Number(percentageInput.value) / 100 || 1; });
+      }
+      renderChart();
+      updateTotals();
+    }
+    try { localStorage.setItem(COLLAPSE_KEY_PREFIX + 'retirementMode', enabled ? '1' : '0'); } catch (e) {}
+    save();
+  }
+
+  if (calcModeToggle) {
+    try {
+      const stored = localStorage.getItem(COLLAPSE_KEY_PREFIX + 'retirementMode');
+      if (stored === '1') setRetirementMode(true);
+    } catch (e) {}
+    calcModeToggle.addEventListener('change', () => { setRetirementMode(calcModeToggle.checked); });
+  }
+
   const CHART_HEIGHT_PX = 280;
   const MAX_CREDIT_HARD = 350;
   const SCALE_OPTIONS = [200, 250, 300, 350];
@@ -364,7 +422,7 @@
     if (goal != null && !isNaN(goal) && goal > 0) {
       const avgPay = payYear.months.reduce((s, m) => s + (m.payRate || 0), 0) / 12;
       const bid = Number(bidPeriodsInput.value) || 1;
-      const pct = Number(percentageInput.value) / 100 || 1;
+      const pct = retirementMode ? 1 : (Number(percentageInput.value) / 100 || 1);
       if (avgPay > 0 && bid > 0 && pct > 0) {
         targetCredit = (goal / 12) / (avgPay * bid * pct);
         targetCredit = Math.max(0, Math.min(MAX_CREDIT_HARD, targetCredit));
@@ -572,6 +630,83 @@
     return payRate * credit * bidPeriods * percentage;
   }
 
+  function parseIRSInput(el, fallback) {
+    if (!el) return fallback;
+    const cleaned = String(el.value).replace(/,/g, '').replace(/[^0-9]/g, '');
+    return cleaned === '' ? fallback : Number(cleaned);
+  }
+
+  function computeSpillCash() {
+    if (!payYear || !retirementMode) return null;
+    const dcRate = (Number(dcRateInput ? dcRateInput.value : 15) || 0) / 100;
+    if (dcRate <= 0) return null;
+
+    const limit415c = parseIRSInput(limit415cInput, 72000);
+    const empDeferral = parseIRSInput(empDeferralInput, 24500);
+    const compLimit = COMP_LIMIT_401A17;
+
+    // Room in 401k for employer contributions after employee deferral
+    let dcRoom = Math.max(0, limit415c - empDeferral);
+    let cumulativeComp = 0;
+    let totalBasePay = 0;
+    let totalDC = 0;
+    let totalSpillCash = 0;
+
+    payYear.months.forEach(m => {
+      const basePay = (m.payRate || 0) * (m.credit || 0) * (m.bidPeriods || 1);
+      const prevCumulativeComp = cumulativeComp;
+      cumulativeComp += basePay;
+      totalBasePay += basePay;
+
+      // How much of this month's pay is eligible under 401(a)(17)?
+      let eligibleComp = 0;
+      if (prevCumulativeComp < compLimit) {
+        eligibleComp = Math.min(basePay, compLimit - prevCumulativeComp);
+      }
+
+      // Intended employer DC on eligible compensation
+      const intendedDC = eligibleComp * dcRate;
+
+      // DC on ineligible compensation (above 401(a)(17)) - all becomes spill cash
+      const spillFromCompLimit = (basePay - eligibleComp) * dcRate;
+
+      // Of the intended DC, how much fits in 415(c)?
+      const actualDC = Math.min(intendedDC, dcRoom);
+      const spillFrom415c = intendedDC - actualDC;
+
+      dcRoom -= actualDC;
+      totalDC += actualDC;
+      totalSpillCash += spillFromCompLimit + spillFrom415c;
+    });
+
+    return { totalBasePay, totalDC, totalSpillCash, taxableW2: totalBasePay + totalSpillCash };
+  }
+
+  function updateSpillCashDisplay() {
+    const result = computeSpillCash();
+    if (!spillCashSummary) return;
+    if (!result) {
+      spillCashSummary.style.display = 'none';
+      return;
+    }
+    spillCashSummary.style.display = 'block';
+    if (spillBasePayEl) spillBasePayEl.textContent = formatMoney(result.totalBasePay);
+    if (spillDC401kEl) spillDC401kEl.textContent = formatMoney(result.totalDC);
+    if (spillCashAmountEl) spillCashAmountEl.textContent = formatMoney(result.totalSpillCash);
+    if (spillW2IncomeEl) spillW2IncomeEl.textContent = formatMoney(result.taxableW2);
+
+    // In retirement mode, override the total displays to show taxable W-2 income
+    if (retirementMode) {
+      currentTotalEl.textContent = formatMoney(result.taxableW2);
+      if (chartResultIncomeEl) chartResultIncomeEl.textContent = formatMoney(result.taxableW2);
+      if (goal != null && !isNaN(goal)) {
+        const remaining = goal - result.taxableW2;
+        remainingGoalEl.textContent = formatMoney(Math.abs(remaining));
+        remainingGoalEl.className = 'remaining ' + (remaining <= 0 ? 'met' : 'over');
+      }
+    }
+  }
+
   function updateTotals() {
     if (!payYear) return;
     const total = payYear.months.reduce((sum, month) => sum + computeMonthTotal(month), 0);
@@ -595,6 +730,7 @@
       remainingGoalEl.textContent = '—';
       remainingGoalEl.className = 'remaining';
     }
+    updateSpillCashDisplay();
   }
 
   goalInput.addEventListener('input', () => {
@@ -681,6 +817,23 @@
       save();
     }
   });
+
+  // IRS limit / DC rate inputs: recalculate spill cash on change, format on blur
+  [limit415cInput, empDeferralInput].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (payYear) { updateTotals(); save(); }
+    });
+    el.addEventListener('blur', () => {
+      const val = parseIRSInput(el, 0);
+      if (val > 0) el.value = val.toLocaleString('en-US');
+    });
+  });
+  if (dcRateInput) {
+    dcRateInput.addEventListener('input', () => {
+      if (payYear) { updateTotals(); save(); }
+    });
+  }
 
   // Draggable target line: moving it updates the targeted income goal (mouse + touch)
   if (chartTargetLine) {
@@ -792,6 +945,13 @@
         percentageInput.value = Math.round((first.percentage || 1) * 100);
       }
     }
+
+    if (state.dcRate != null && dcRateInput) dcRateInput.value = state.dcRate;
+    if (state.irsLimits) {
+      if (limit415cInput && state.irsLimits.limit415c != null) limit415cInput.value = Number(state.irsLimits.limit415c).toLocaleString('en-US');
+      if (empDeferralInput && state.irsLimits.empDeferral != null) empDeferralInput.value = Number(state.irsLimits.empDeferral).toLocaleString('en-US');
+    }
+    setRetirementMode(!!state.retirementMode);
 
     payRatesSection.style.display = 'block';
     chartSection.style.display = 'block';
