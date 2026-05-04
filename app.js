@@ -205,7 +205,7 @@
     if (scenariosSection) scenariosSection.style.display = 'block';
     if (payRateGroupsData.length === 0) {
       addPayRateGroup(); // Pay Rate 1 (Dec, Jan, Feb)
-      addPayRateGroup(); // Pay Rate 2 (remaining months) – visible right away
+      addPayRateGroup(); // Pay Rate 2 (Mar, Apr, May) – visible right away
     }
     updatePayRatesInMonths();
     renderChart();
@@ -214,7 +214,7 @@
   }
 
   function addPayRateGroup() {
-    if (payRateGroupsData.length >= 2) return;
+    if (payRateGroupsData.length >= 4) return;
     const groupId = payRateGroupsData.length;
     let months = [];
     let payRate = 150;
@@ -222,9 +222,14 @@
       months = [11, 0, 1];
       payRate = 256.14;
     } else if (groupId === 1) {
-      const firstGroupMonths = payRateGroupsData[0].months;
-      months = PAY_YEAR_MONTHS.filter(m => !firstGroupMonths.includes(m));
+      months = [2, 3, 4];
       payRate = 263.75;
+    } else if (groupId === 2) {
+      months = [5, 6, 7];
+      payRate = 268.25;
+    } else if (groupId === 3) {
+      months = [8, 9, 10];
+      payRate = 272.5;
     }
     payRateGroupsData.push({ id: groupId, payRate, months });
     renderPayRateGroups();
@@ -236,15 +241,11 @@
     save();
   }
 
-  function syncInverseMonths(changedGroupId) {
-    if (payRateGroupsData.length !== 2) return;
-    const g1 = payRateGroupsData[0];
-    const g2 = payRateGroupsData[1];
-    if (changedGroupId === 0) {
-      g2.months = PAY_YEAR_MONTHS.filter(m => !g1.months.includes(m));
-    } else {
-      g1.months = PAY_YEAR_MONTHS.filter(m => !g2.months.includes(m));
-    }
+  function assignMonthToGroup(groupId, monthIndex) {
+    payRateGroupsData.forEach(g => {
+      if (g.id === groupId) return;
+      g.months = g.months.filter(m => m !== monthIndex);
+    });
   }
 
   function removePayRateGroup(groupId) {
@@ -262,16 +263,16 @@
 
   function renderPayRateGroups() {
     if (addPayRateGroupBtn) {
-      if (payRateGroupsData.length >= 2) {
+      if (payRateGroupsData.length >= 4) {
         addPayRateGroupBtn.disabled = true;
         addPayRateGroupBtn.style.opacity = '0.5';
         addPayRateGroupBtn.style.cursor = 'not-allowed';
-        addPayRateGroupBtn.textContent = 'Maximum 2 pay rates';
+        addPayRateGroupBtn.textContent = 'Maximum 4 pay rates';
       } else {
         addPayRateGroupBtn.disabled = false;
         addPayRateGroupBtn.style.opacity = '1';
         addPayRateGroupBtn.style.cursor = 'pointer';
-        addPayRateGroupBtn.textContent = payRateGroupsData.length === 0 ? '+ Add first pay rate' : '+ Add second pay rate';
+        addPayRateGroupBtn.textContent = '+ Add pay rate';
       }
     }
     payRateGroups.innerHTML = '';
@@ -310,13 +311,11 @@
         checkbox.addEventListener('change', () => {
           if (checkbox.checked) {
             if (!group.months.includes(monthIndex)) group.months.push(monthIndex);
+            assignMonthToGroup(group.id, monthIndex);
           } else {
             group.months = group.months.filter(m => m !== monthIndex);
           }
-          if (payRateGroupsData.length === 2) {
-            syncInverseMonths(group.id);
-            renderPayRateGroups();
-          }
+          renderPayRateGroups();
           updatePayRatesInMonths();
           renderChart();
           updateTotals();
