@@ -1412,10 +1412,26 @@
       if (firstAge != null) html = '<strong>' + year + ' (age ' + firstAge + ')</strong>' + html.slice(html.indexOf('</strong>') + 9);
       tooltip.innerHTML = html;
       tooltip.hidden = false;
+
+      // Smart positioning: keep tooltip fully inside the chart-wrap (which has
+      // overflow:hidden, so we cannot rely on negative offsets). We position it
+      // anchored on the chart-area's top, then clamp left so it doesn't escape
+      // off the left/right edge.
       var wrapBox = els.chartWrap.getBoundingClientRect();
-      var leftPx = (hx / W) * wrapBox.width;
+      var ttBox = tooltip.getBoundingClientRect();
+      var anchorX = (hx / W) * wrapBox.width;
+      var topPx = ((pad.top + 6) / H) * wrapBox.height;
+      var leftPx = anchorX - ttBox.width / 2;
+      var maxLeft = wrapBox.width - ttBox.width - 6;
+      if (leftPx < 6) leftPx = 6;
+      if (leftPx > maxLeft) leftPx = maxLeft;
+      // If the user's finger is in the upper part of the chart, push the
+      // tooltip toward the bottom so it isn't covered by their hand.
+      if ((evt.clientY - wrapBox.top) < wrapBox.height * 0.45) {
+        topPx = wrapBox.height - ttBox.height - 8;
+      }
       tooltip.style.left = leftPx + 'px';
-      tooltip.style.top = (pad.top / H) * wrapBox.height + 'px';
+      tooltip.style.top = topPx + 'px';
     }
 
     function onLeave() {

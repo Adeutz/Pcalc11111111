@@ -1237,17 +1237,17 @@ input[type="number"] {
 
 .career-chart-tooltip {
   position: absolute;
-  background: var(--surface);
+  background: rgba(37, 40, 48, 0.96);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.5rem 0.7rem;
   font-size: 0.8rem;
+  line-height: 1.35;
   pointer-events: none;
-  white-space: nowrap;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   z-index: 10;
-  transform: translate(-50%, -120%);
+  max-width: calc(100% - 16px);
 }
 
 .career-chart-tooltip[hidden] { display: none; }

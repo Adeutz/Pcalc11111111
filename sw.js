@@ -1,4 +1,4 @@
-const CACHE = 'pcalc11111111-v10';
+const CACHE = 'pcalc11111111-v11';
 const ASSETS = ['index.html', 'styles.css', 'app.js', 'career.js', 'icon.svg', 'apple-touch-icon.png', 'manifest.json'];
 
 self.addEventListener('install', (e) => {
