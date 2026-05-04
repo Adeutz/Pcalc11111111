@@ -1223,6 +1223,19 @@
     compareScenariosBtn.addEventListener('click', generateComparisonPDF);
   }
 
+  let chartLayoutRefreshTimer = null;
+  function refreshChartLayoutAfterRotate() {
+    if (!payYear) return;
+    if (chartLayoutRefreshTimer) clearTimeout(chartLayoutRefreshTimer);
+    chartLayoutRefreshTimer = setTimeout(function () {
+      renderChart();
+      updateTotals();
+      chartLayoutRefreshTimer = null;
+    }, 120);
+  }
+  window.addEventListener('resize', refreshChartLayoutAfterRotate);
+  window.addEventListener('orientationchange', refreshChartLayoutAfterRotate);
+
   loadScenarios();
   renderScenarioSlots();
 })();
