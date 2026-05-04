@@ -683,6 +683,13 @@
     return { totalBasePay, totalDC, totalSpillCash, taxableW2: totalBasePay + totalSpillCash };
   }
 
+  function getDisplayedIncomeTotal(baseTotal) {
+    if (!retirementMode) return baseTotal;
+    const spill = computeSpillCash();
+    if (!spill) return baseTotal;
+    return spill.taxableW2;
+  }
+
   function updateSpillCashDisplay() {
     const result = computeSpillCash();
     if (!spillCashSummary) return;
@@ -695,36 +702,26 @@
     if (spillDC401kEl) spillDC401kEl.textContent = formatMoney(result.totalDC);
     if (spillCashAmountEl) spillCashAmountEl.textContent = formatMoney(result.totalSpillCash);
     if (spillW2IncomeEl) spillW2IncomeEl.textContent = formatMoney(result.taxableW2);
-
-    // In retirement mode, override the total displays to show taxable W-2 income
-    if (retirementMode) {
-      currentTotalEl.textContent = formatMoney(result.taxableW2);
-      if (chartResultIncomeEl) chartResultIncomeEl.textContent = formatMoney(result.taxableW2);
-      if (goal != null && !isNaN(goal)) {
-        const remaining = goal - result.taxableW2;
-        remainingGoalEl.textContent = formatMoney(Math.abs(remaining));
-        remainingGoalEl.className = 'remaining ' + (remaining <= 0 ? 'met' : 'over');
-      }
-    }
   }
 
   function updateTotals() {
     if (!payYear) return;
-    const total = payYear.months.reduce((sum, month) => sum + computeMonthTotal(month), 0);
-    currentTotalEl.textContent = formatMoney(total);
-    if (chartResultIncomeEl) chartResultIncomeEl.textContent = formatMoney(total);
+    const baseTotal = payYear.months.reduce((sum, month) => sum + computeMonthTotal(month), 0);
+    const displayedTotal = getDisplayedIncomeTotal(baseTotal);
+    currentTotalEl.textContent = formatMoney(displayedTotal);
+    if (chartResultIncomeEl) chartResultIncomeEl.textContent = formatMoney(displayedTotal);
     if (chartTargetIncomeEl) {
       chartTargetIncomeEl.textContent = (goal != null && !isNaN(goal)) ? formatMoney(goal) : '—';
       const targetedBlock = chartTargetIncomeEl.closest('.chart-targeted-income');
       if (targetedBlock) {
         targetedBlock.classList.remove('under', 'met');
         if (goal != null && !isNaN(goal)) {
-          targetedBlock.classList.add(total < goal ? 'under' : 'met');
+          targetedBlock.classList.add(displayedTotal < goal ? 'under' : 'met');
         }
       }
     }
     if (goal != null && !isNaN(goal)) {
-      const remaining = goal - total;
+      const remaining = goal - displayedTotal;
       remainingGoalEl.textContent = formatMoney(Math.abs(remaining));
       remainingGoalEl.className = 'remaining ' + (remaining <= 0 ? 'met' : 'over');
     } else {
