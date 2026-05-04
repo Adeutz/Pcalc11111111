@@ -16,9 +16,18 @@
         <h1>Pcalc11111111</h1>
         <button type="button" class="btn-refresh" id="refreshBtn" title="Reload app to get latest version">Refresh</button>
       </div>
-      <p class="subtitle">Plan your pay year (Dec–Nov) to reach your income goal</p>
+      <p class="subtitle" id="appSubtitle">Plan your pay year (Dec–Nov) to reach your income goal</p>
       <p class="save-indicator" id="saveIndicator" aria-live="polite">Saved</p>
     </header>
+
+    <!-- TOP TABS -->
+    <nav class="top-tabs" role="tablist" aria-label="App views">
+      <button type="button" class="top-tab active" id="tabPayYear" role="tab" aria-selected="true" data-view="payYear">Pay Year Planner</button>
+      <button type="button" class="top-tab" id="tabCareer" role="tab" aria-selected="false" data-view="career">Career Comparison</button>
+    </nav>
+
+    <!-- ============= VIEW 1: PAY YEAR PLANNER (existing) ============= -->
+    <div class="view view-pay-year" id="viewPayYear">
 
     <!-- STEP 1: Annual Income Goal -->
     <section class="goal-section collapsible" id="goalSection">
@@ -179,13 +188,162 @@
         <!-- Filled by JS -->
       </div>
     </section>
+
+    </div><!-- /viewPayYear -->
+
+    <!-- ============= VIEW 2: CAREER COMPARISON (new) ============= -->
+    <div class="view view-career" id="viewCareer" style="display: none;">
+
+      <!-- Scenario picker bar -->
+      <section class="career-scenario-bar">
+        <div class="career-bar-row">
+          <label for="careerScenarioSelect" class="career-bar-label">Scenario:</label>
+          <select id="careerScenarioSelect" class="career-select"></select>
+          <button type="button" class="btn btn-secondary btn-sm" id="careerNewScenarioBtn">+ New</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="careerCloneScenarioBtn">Clone</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="careerRenameScenarioBtn">Rename</button>
+          <button type="button" class="btn btn-danger-outline btn-sm" id="careerDeleteScenarioBtn">Delete</button>
+        </div>
+        <div class="career-bar-row">
+          <button type="button" class="btn btn-secondary btn-sm" id="careerExportBtn" title="Save all scenarios to a JSON file">Export JSON</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="careerImportBtn" title="Load scenarios from a JSON file">Import JSON</button>
+          <input type="file" id="careerImportFile" accept="application/json,.json" style="display:none;">
+          <button type="button" class="btn btn-secondary btn-sm" id="careerResetBtn" title="Restore default starter scenarios">Reset to Defaults</button>
+        </div>
+      </section>
+
+      <!-- Global scenario settings -->
+      <section class="career-section collapsible" id="careerGlobalSection">
+        <button type="button" class="collapsible-header" data-collapse-target="careerGlobalBody" aria-expanded="true">
+          <span class="collapsible-title">Global Settings</span>
+          <span class="collapsible-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="collapsible-body" id="careerGlobalBody">
+          <div class="career-grid">
+            <div class="career-field">
+              <label for="careerStartYear">Start year</label>
+              <input type="number" id="careerStartYear" min="2000" max="2100" step="1">
+            </div>
+            <div class="career-field">
+              <label for="careerEndYear">End year</label>
+              <input type="number" id="careerEndYear" min="2000" max="2100" step="1">
+            </div>
+            <div class="career-field">
+              <label for="careerStartNetWorth">Starting net worth ($)</label>
+              <input type="number" id="careerStartNetWorth" min="0" step="1000">
+            </div>
+            <div class="career-field">
+              <label for="careerInterestRate">Annual return %</label>
+              <input type="number" id="careerInterestRate" min="-20" max="50" step="0.1">
+            </div>
+            <div class="career-field">
+              <label for="careerMcSims">Monte Carlo sims (probability mode)</label>
+              <input type="number" id="careerMcSims" min="0" max="2000" step="50" value="200">
+            </div>
+            <div class="career-field career-field-toggle">
+              <label class="career-toggle">
+                <input type="checkbox" id="careerShowBand">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-label">Show probability band</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Net worth chart -->
+      <section class="career-section career-chart-section">
+        <div class="career-chart-header">
+          <h2>Net worth over time</h2>
+          <div class="career-chart-summary" id="careerChartSummary"></div>
+        </div>
+        <div class="career-chart-wrap" id="careerChartWrap">
+          <svg id="careerChart" class="career-chart" preserveAspectRatio="none" aria-label="Net worth comparison chart"></svg>
+          <div class="career-chart-tooltip" id="careerChartTooltip" hidden></div>
+        </div>
+        <div class="career-legend" id="careerLegend"></div>
+        <div class="career-crossover-list" id="careerCrossoverList"></div>
+      </section>
+
+      <!-- Career paths editor -->
+      <section class="career-section">
+        <div class="career-paths-header">
+          <h2>Career Paths</h2>
+          <button type="button" class="btn btn-secondary btn-sm" id="careerAddPathBtn">+ Add Path</button>
+        </div>
+        <p class="section-hint">Add as many paths as you want (e.g., "G4 stay", "DL leave", "G4 widebody"). Each one gets its own line on the chart.</p>
+        <div class="career-paths-list" id="careerPathsList"></div>
+      </section>
+
+      <!-- What-if helper -->
+      <section class="career-section collapsible">
+        <button type="button" class="collapsible-header" data-collapse-target="careerWhatIfBody" aria-expanded="true">
+          <span class="collapsible-title">What-if: what pay rate would Path A need to match Path B?</span>
+          <span class="collapsible-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="collapsible-body" id="careerWhatIfBody">
+          <div class="career-grid">
+            <div class="career-field">
+              <label for="whatIfPathA">Boost which path?</label>
+              <select id="whatIfPathA" class="career-select"></select>
+            </div>
+            <div class="career-field">
+              <label for="whatIfPathB">To match which path?</label>
+              <select id="whatIfPathB" class="career-select"></select>
+            </div>
+            <div class="career-field">
+              <label for="whatIfYear">At end of year</label>
+              <input type="number" id="whatIfYear" min="2000" max="2100" step="1">
+            </div>
+            <div class="career-field career-field-wide">
+              <button type="button" class="btn btn-primary btn-sm" id="whatIfRunBtn">Calculate</button>
+            </div>
+          </div>
+          <div class="career-whatif-result" id="whatIfResult"></div>
+        </div>
+      </section>
+
+    </div><!-- /viewCareer -->
+
   </div>
 
   <script src="app.js"></script>
+  <script src="career.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(function() {});
     }
+    // Top tab switching
+    (function() {
+      var tabs = document.querySelectorAll('.top-tab');
+      var subtitle = document.getElementById('appSubtitle');
+      var SUBTITLES = {
+        payYear: 'Plan your pay year (Dec\u2013Nov) to reach your income goal',
+        career: 'Compare career paths and visualize net worth over your career'
+      };
+      function setView(name) {
+        tabs.forEach(function(t) {
+          var on = t.getAttribute('data-view') === name;
+          t.classList.toggle('active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        document.getElementById('viewPayYear').style.display = (name === 'payYear') ? '' : 'none';
+        document.getElementById('viewCareer').style.display = (name === 'career') ? '' : 'none';
+        if (subtitle && SUBTITLES[name]) subtitle.textContent = SUBTITLES[name];
+        try { localStorage.setItem('pcalc11111111-active-view', name); } catch (e) {}
+        if (name === 'career' && window.CareerComparison && window.CareerComparison.activate) {
+          window.CareerComparison.activate();
+        }
+      }
+      tabs.forEach(function(t) {
+        t.addEventListener('click', function() { setView(t.getAttribute('data-view')); });
+      });
+      try {
+        var saved = localStorage.getItem('pcalc11111111-active-view');
+        if (saved === 'career' || saved === 'payYear') setView(saved);
+      } catch (e) {}
+    })();
+
     document.getElementById('refreshBtn').addEventListener('click', function() {
       if ('serviceWorker' in navigator) {
         caches.keys().then(function(keys) {

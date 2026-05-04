@@ -1,5 +1,5 @@
-const CACHE = 'pcalc11111111-v8';
-const ASSETS = ['index.html', 'styles.css', 'app.js', 'icon.svg', 'manifest.json'];
+const CACHE = 'pcalc11111111-v9';
+const ASSETS = ['index.html', 'styles.css', 'app.js', 'career.js', 'icon.svg', 'manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
