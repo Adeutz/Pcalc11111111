@@ -1,5 +1,5 @@
-const CACHE = 'pcalc11111111-v9';
-const ASSETS = ['index.html', 'styles.css', 'app.js', 'career.js', 'icon.svg', 'manifest.json'];
+const CACHE = 'pcalc11111111-v10';
+const ASSETS = ['index.html', 'styles.css', 'app.js', 'career.js', 'icon.svg', 'apple-touch-icon.png', 'manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -44,7 +44,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  if (url.pathname.endsWith('manifest.json') || url.pathname.endsWith('icon.svg')) {
+  if (url.pathname.endsWith('manifest.json') || url.pathname.endsWith('icon.svg') || url.pathname.endsWith('apple-touch-icon.png')) {
     e.respondWith(
       caches.match(e.request).then((cached) => cached || fetch(e.request))
     );

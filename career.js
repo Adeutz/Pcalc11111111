@@ -51,6 +51,20 @@
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
+  // Apply iOS-friendly inputmode to all number inputs inside the career view.
+  // Called after re-renders. inputmode='decimal' brings up the proper numeric
+  // keyboard with a decimal point on iOS / Android.
+  function applyInputModeDecimal() {
+    var view = document.getElementById('viewCareer');
+    if (!view) return;
+    var inputs = view.querySelectorAll('input[type="number"]');
+    for (var i = 0; i < inputs.length; i++) {
+      if (!inputs[i].hasAttribute('inputmode')) {
+        inputs[i].setAttribute('inputmode', 'decimal');
+      }
+    }
+  }
+
   function formatMoney(n, opts) {
     opts = opts || {};
     if (n == null || isNaN(n)) return '—';
@@ -130,7 +144,7 @@
       name: 'New Scenario',
       startYear: 2026,
       endYear: 2060,
-      startNetWorth: 500000,
+      startNetWorth: 100000,
       interestRate: 6.0,
       paths: [],
       createdAt: new Date().toISOString()
@@ -298,19 +312,32 @@
   }
 
   /**
+   * Resolve the credit hours per month for a given year.
+   * Per-year override wins; otherwise falls back to the path default.
+   */
+  function resolveCreditHours(path, year) {
+    var ov = path.yearlyOverrides && path.yearlyOverrides[year];
+    if (ov && typeof ov.creditHours === 'number' && !isNaN(ov.creditHours)) {
+      return ov.creditHours;
+    }
+    return path.creditHoursPerMonth || 0;
+  }
+
+  /**
    * Compute the income for a given year, applying risk events.
-   * Returns { rate, income, riskMultiplier, riskLabel }.
+   * Returns { rate, income, creditHours, riskMultiplier, riskLabel }.
    */
   function computeYearIncome(path, year, scenario, opts) {
     opts = opts || {};
     var rate = resolveBaseRate(path, year, scenario);
+    var creditHours = resolveCreditHours(path, year);
     var ov = path.yearlyOverrides && path.yearlyOverrides[year];
 
     var income;
     if (ov && typeof ov.income === 'number' && !isNaN(ov.income)) {
       income = ov.income;
     } else {
-      income = rate * (path.creditHoursPerMonth || 0) * 12;
+      income = rate * creditHours * 12;
     }
 
     var mult = 1;
@@ -333,7 +360,13 @@
       }
     }
 
-    return { rate: rate, income: income * mult, riskMultiplier: mult, riskLabel: label };
+    return {
+      rate: rate,
+      income: income * mult,
+      creditHours: creditHours,
+      riskMultiplier: mult,
+      riskLabel: label
+    };
   }
 
   /**
@@ -374,6 +407,7 @@
         age: path.startAge + idx,
         yos: path.startYos + idx,
         rate: inc.rate,
+        creditHours: inc.creditHours,
         income: inc.income,
         save: save,
         netWorth: nw,
@@ -460,6 +494,7 @@
     renderPaths(s);
     renderWhatIfPathSelectors(s);
     renderChart(s);
+    applyInputModeDecimal();
     save();
   }
 
@@ -1009,7 +1044,7 @@
     thead.innerHTML =
       '<tr>' +
       '<th>Year</th><th>Age</th><th>YOS</th>' +
-      '<th>Rate $/hr</th><th>Income $</th>' +
+      '<th>Rate $/hr</th><th title="Override credit hours per month for this year. Leave blank to use the path default.">Credit hrs/mo</th><th>Income $</th>' +
       '<th>Save $</th><th>Net Worth $</th>' +
       '</tr>';
     grid.appendChild(thead);
@@ -1020,7 +1055,11 @@
     rows.forEach(function (row) {
       var tr = document.createElement('tr');
       var ov = path.yearlyOverrides && path.yearlyOverrides[row.year];
-      var hasOverride = !!(ov && (typeof ov.rate === 'number' || typeof ov.income === 'number'));
+      var hasOverride = !!(ov && (
+        typeof ov.rate === 'number' ||
+        typeof ov.income === 'number' ||
+        typeof ov.creditHours === 'number'
+      ));
       if (hasOverride) tr.classList.add('yg-override');
 
       tr.appendChild(td(row.year));
@@ -1051,6 +1090,31 @@
       });
       rateTd.appendChild(rateInp);
       tr.appendChild(rateTd);
+
+      // Credit hours per month (editable override)
+      var chTd = document.createElement('td');
+      var chInp = document.createElement('input');
+      chInp.type = 'number'; chInp.step = 1; chInp.min = 0;
+      chInp.placeholder = String(path.creditHoursPerMonth || 0);
+      chInp.value = ov && typeof ov.creditHours === 'number' ? ov.creditHours : '';
+      chInp.title = 'Override credit hours/month for this year. Leave blank to use the path default. (401k & profit share auto-recalc.)';
+      chInp.addEventListener('input', function () {
+        path.yearlyOverrides = path.yearlyOverrides || {};
+        var v = chInp.value === '' ? null : parseFloat(chInp.value);
+        if (v == null || isNaN(v)) {
+          if (path.yearlyOverrides[row.year]) delete path.yearlyOverrides[row.year].creditHours;
+          if (path.yearlyOverrides[row.year] && Object.keys(path.yearlyOverrides[row.year]).length === 0)
+            delete path.yearlyOverrides[row.year];
+        } else {
+          path.yearlyOverrides[row.year] = path.yearlyOverrides[row.year] || {};
+          path.yearlyOverrides[row.year].creditHours = v;
+        }
+        renderChart(scenario);
+        refreshYearlyGrid(path, scenario);
+        save();
+      });
+      chTd.appendChild(chInp);
+      tr.appendChild(chTd);
 
       // Income (editable override)
       var incTd = document.createElement('td');
@@ -1108,7 +1172,10 @@
 
   function refreshYearlyGrid(path, scenario) {
     var grid = els.pathsList.querySelector('.career-yearly-grid[data-path-id="' + path.id + '"]');
-    if (grid) populateYearlyGrid(grid, path, scenario);
+    if (grid) {
+      populateYearlyGrid(grid, path, scenario);
+      applyInputModeDecimal();
+    }
   }
 
   // ===========================================================================
@@ -1358,14 +1425,33 @@
     }
 
     hoverRect.addEventListener('mousemove', onMove);
-    hoverRect.addEventListener('touchmove', function (ev) {
+    hoverRect.addEventListener('mouseleave', onLeave);
+
+    // Touch behaviour: tooltip stays visible until the user taps outside the
+    // chart. This is much better than disappearing on touchend (which is what
+    // mobile users expect for a "tap to inspect" interaction).
+    function touchHandler(ev) {
       if (ev.touches && ev.touches[0]) {
         onMove(ev.touches[0]);
         ev.preventDefault();
       }
-    }, { passive: false });
-    hoverRect.addEventListener('mouseleave', onLeave);
-    hoverRect.addEventListener('touchend', onLeave);
+    }
+    hoverRect.addEventListener('touchstart', touchHandler, { passive: false });
+    hoverRect.addEventListener('touchmove', touchHandler, { passive: false });
+    // Stash the latest onLeave so the (single, init-time) doc-level handler
+    // can dismiss the tooltip when the user taps outside the chart.
+    chartTooltipDismiss = onLeave;
+  }
+
+  // Single doc-level "tap outside chart to dismiss" handler. Installed once at
+  // init time; reads the latest onLeave through chartTooltipDismiss.
+  var chartTooltipDismiss = null;
+  function installTooltipDismissListener() {
+    document.addEventListener('touchstart', function (ev) {
+      if (!chartTooltipDismiss) return;
+      if (els.tooltip && els.tooltip.hidden) return;
+      if (els.chartWrap && !els.chartWrap.contains(ev.target)) chartTooltipDismiss();
+    }, { passive: true });
   }
 
   function renderLegend() {
@@ -1488,7 +1574,9 @@
         var baseInc = computeYearIncome(pa, yr, scenario);
         var ovBase = pa.yearlyOverrides && pa.yearlyOverrides[yr];
         clone.yearlyOverrides = clone.yearlyOverrides || {};
-        var addIncome = boost * (pa.creditHoursPerMonth || 0) * 12;
+        // Use this year's effective credit hours (per-year override wins)
+        var hoursThisYear = resolveCreditHours(pa, yr);
+        var addIncome = boost * hoursThisYear * 12;
         // If a manual income was set, just add boost*hours*12 to that income
         if (ovBase && typeof ovBase.income === 'number') {
           clone.yearlyOverrides[yr] = Object.assign({}, ovBase, {
@@ -1728,6 +1816,9 @@
 
     // What-if
     els.whatIfRunBtn.addEventListener('click', runWhatIf);
+
+    // Tap-outside-to-dismiss for chart tooltip (touch devices)
+    installTooltipDismissListener();
 
     // Re-render chart on resize
     var resizeTimer = null;
