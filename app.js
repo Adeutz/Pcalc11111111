@@ -24,6 +24,7 @@
   const chartResultIncomeEl = document.getElementById('chartResultIncome');
   const chartTargetIncomeEl = document.getElementById('chartTargetIncome');
   const creditInputsRow = document.getElementById('creditInputsRow');
+  const orientationBtn = document.getElementById('orientationBtn');
   const scenariosSection = document.getElementById('scenariosSection');
   const scenarioSlots = document.getElementById('scenarioSlots');
   const compareScenariosBtn = document.getElementById('compareScenariosBtn');
@@ -1224,6 +1225,7 @@
   }
 
   let chartLayoutRefreshTimer = null;
+  let manualLandscapeMode = false;
   function refreshChartLayoutAfterRotate() {
     if (!payYear) return;
     if (chartLayoutRefreshTimer) clearTimeout(chartLayoutRefreshTimer);
@@ -1235,6 +1237,28 @@
   }
   window.addEventListener('resize', refreshChartLayoutAfterRotate);
   window.addEventListener('orientationchange', refreshChartLayoutAfterRotate);
+
+  function setManualLandscapeMode(enabled) {
+    manualLandscapeMode = !!enabled;
+    document.body.classList.toggle('manual-landscape', manualLandscapeMode);
+    if (orientationBtn) {
+      orientationBtn.textContent = manualLandscapeMode ? 'Portrait View' : 'Rotate View';
+    }
+    try {
+      localStorage.setItem(COLLAPSE_KEY_PREFIX + 'manualLandscape', manualLandscapeMode ? '1' : '0');
+    } catch (e) {}
+    refreshChartLayoutAfterRotate();
+  }
+
+  if (orientationBtn) {
+    try {
+      const storedLandscape = localStorage.getItem(COLLAPSE_KEY_PREFIX + 'manualLandscape');
+      if (storedLandscape === '1') setManualLandscapeMode(true);
+    } catch (e) {}
+    orientationBtn.addEventListener('click', function () {
+      setManualLandscapeMode(!manualLandscapeMode);
+    });
+  }
 
   loadScenarios();
   renderScenarioSlots();

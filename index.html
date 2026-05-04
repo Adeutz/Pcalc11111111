@@ -110,11 +110,16 @@
       </div>
       <div class="chart-hint-row">
         <p class="section-hint">Drag the bars up/down or click to edit. Each bar shows credit hours needed for that month.</p>
-        <label class="chart-lock-toggle" title="Lock bars to prevent accidental drags">
-          <input type="checkbox" id="chartLockToggle">
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          <span class="toggle-label" id="lockLabel">Lock bars</span>
-        </label>
+        <div class="chart-controls">
+          <button type="button" class="btn btn-secondary btn-sm chart-orientation-btn" id="orientationBtn" title="Force landscape-style chart layout">
+            Rotate View
+          </button>
+          <label class="chart-lock-toggle" title="Lock bars to prevent accidental drags">
+            <input type="checkbox" id="chartLockToggle">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-label" id="lockLabel">Lock bars</span>
+          </label>
+        </div>
       </div>
       
       <div class="chart-container" id="chartContainer">

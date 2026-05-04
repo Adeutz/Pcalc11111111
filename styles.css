@@ -551,6 +551,16 @@ body {
   margin-bottom: 0;
 }
 
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.chart-orientation-btn {
+  white-space: nowrap;
+}
+
 .chart-lock-toggle {
   display: flex;
   align-items: center;
@@ -1035,6 +1045,30 @@ body {
   .chart-y-axis,
   .chart-bars,
   .chart-bar-cell {
+    height: 240px;
+  }
+}
+
+@media (max-width: 1024px) {
+  body.manual-landscape {
+    padding: 0.75rem;
+  }
+
+  body.manual-landscape .header {
+    margin-bottom: 1rem;
+  }
+
+  body.manual-landscape .chart-section {
+    padding: 1rem;
+  }
+
+  body.manual-landscape .chart-container {
+    margin: 0.75rem 0;
+  }
+
+  body.manual-landscape .chart-y-axis,
+  body.manual-landscape .chart-bars,
+  body.manual-landscape .chart-bar-cell {
     height: 240px;
   }
 }
