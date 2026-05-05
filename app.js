@@ -68,6 +68,27 @@
   let payYear = null;
   let payRateGroupsData = [];
 
+  /** Full chart redraw mid-keystroke can dismiss the on-screen keyboard on iOS (heavy DOM/layout). */
+  let chartRedrawTimer = null;
+
+  function flushChartRedrawAndSave() {
+    if (chartRedrawTimer != null) {
+      clearTimeout(chartRedrawTimer);
+      chartRedrawTimer = null;
+    }
+    if (payYear) renderChart();
+    save();
+  }
+
+  function scheduleChartRedrawAndSave() {
+    if (chartRedrawTimer != null) clearTimeout(chartRedrawTimer);
+    chartRedrawTimer = setTimeout(() => {
+      chartRedrawTimer = null;
+      if (payYear) renderChart();
+      save();
+    }, 220);
+  }
+
   function getState() {
     return {
       goal,
@@ -293,10 +314,10 @@
       payInput.addEventListener('input', () => {
         group.payRate = Number(payInput.value) || 0;
         updatePayRatesInMonths();
-        renderChart();
         updateTotals();
-        save();
+        scheduleChartRedrawAndSave();
       });
+      payInput.addEventListener('blur', () => flushChartRedrawAndSave());
       header.appendChild(label);
       header.appendChild(payInput);
       const monthSelector = document.createElement('div');
@@ -593,18 +614,17 @@
       input.addEventListener('input', () => {
         const val = Math.max(0, Math.min(MAX_CREDIT_HARD, Number(input.value) || 0));
         payYear.months[idx].credit = val;
-        renderChart();
         updateTotals();
-        save();
+        scheduleChartRedrawAndSave();
       });
       input.addEventListener('change', () => {
         const val = Math.max(0, Math.min(MAX_CREDIT_HARD, Number(input.value) || 0));
         payYear.months[idx].credit = val;
         input.value = val.toFixed(2);
-        renderChart();
         updateTotals();
-        save();
+        flushChartRedrawAndSave();
       });
+      input.addEventListener('blur', () => flushChartRedrawAndSave());
       cell.appendChild(label);
       cell.appendChild(input);
       creditInputsRow.appendChild(cell);
@@ -734,10 +754,10 @@
     goal = parseGoalInput(goalInput.value);
     if (chartTargetIncomeEl) chartTargetIncomeEl.textContent = (goal != null && !isNaN(goal)) ? formatMoney(goal) : '—';
     updateTotals();
-    if (payYear) renderChart();
-    save();
+    scheduleChartRedrawAndSave();
   });
   goalInput.addEventListener('blur', () => {
+    flushChartRedrawAndSave();
     if (goal != null && !isNaN(goal)) goalInput.value = formatIntegerWithCommas(goal);
   });
 
@@ -801,19 +821,19 @@
   bidPeriodsInput.addEventListener('input', () => {
     if (payYear) {
       payYear.months.forEach(m => { m.bidPeriods = Number(bidPeriodsInput.value) || 1; });
-      renderChart();
       updateTotals();
-      save();
+      scheduleChartRedrawAndSave();
     }
   });
+  bidPeriodsInput.addEventListener('blur', () => flushChartRedrawAndSave());
   percentageInput.addEventListener('input', () => {
     if (payYear) {
       payYear.months.forEach(m => { m.percentage = Number(percentageInput.value) / 100 || 1; });
-      renderChart();
       updateTotals();
-      save();
+      scheduleChartRedrawAndSave();
     }
   });
+  percentageInput.addEventListener('blur', () => flushChartRedrawAndSave());
 
   // IRS limit / DC rate inputs: recalculate spill cash on change, format on blur
   [limit415cInput, empDeferralInput].forEach(el => {

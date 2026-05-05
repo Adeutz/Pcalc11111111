@@ -51,6 +51,52 @@
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
+  /** Heavy chart + yearly-table rebuild during typing steals focus / dismisses keyboard on mobile Safari. */
+  var pathHeavyUiTimers = Object.create(null);
+  var scenarioHeavyTimers = Object.create(null);
+  var scenarioChartOnlyTimers = Object.create(null);
+
+  function isFocusInsidePathYearlyGrid(path) {
+    if (!els.pathsList) return false;
+    var grid = els.pathsList.querySelector('.career-yearly-grid[data-path-id="' + path.id + '"]');
+    var ae = document.activeElement;
+    return !!(grid && ae && ae.tagName === 'INPUT' && grid.contains(ae));
+  }
+
+  function schedulePathHeavyUi(path, scenario) {
+    var pid = path.id;
+    if (pathHeavyUiTimers[pid]) clearTimeout(pathHeavyUiTimers[pid]);
+    pathHeavyUiTimers[pid] = setTimeout(function tryRun() {
+      if (isFocusInsidePathYearlyGrid(path)) {
+        pathHeavyUiTimers[pid] = setTimeout(tryRun, 120);
+        return;
+      }
+      pathHeavyUiTimers[pid] = null;
+      renderChart(scenario);
+      refreshYearlyGrid(path, scenario);
+    }, 280);
+  }
+
+  function scheduleScenarioPathsAndChart(scenario) {
+    var sid = scenario.id;
+    if (scenarioHeavyTimers[sid]) clearTimeout(scenarioHeavyTimers[sid]);
+    scenarioHeavyTimers[sid] = setTimeout(function () {
+      scenarioHeavyTimers[sid] = null;
+      renderPaths(scenario);
+      renderChart(scenario);
+      applyInputModeDecimal();
+    }, 320);
+  }
+
+  function scheduleScenarioChartDebounced(scenario) {
+    var sid = scenario.id;
+    if (scenarioChartOnlyTimers[sid]) clearTimeout(scenarioChartOnlyTimers[sid]);
+    scenarioChartOnlyTimers[sid] = setTimeout(function () {
+      scenarioChartOnlyTimers[sid] = null;
+      renderChart(scenario);
+    }, 220);
+  }
+
   // Apply iOS-friendly inputmode to all number inputs inside the career view.
   // Called after re-renders. inputmode='decimal' brings up the proper numeric
   // keyboard with a decimal point on iOS / Android.
@@ -626,9 +672,8 @@
       inp.addEventListener('input', function () {
         var v = parseFloat(inp.value);
         path[f.key] = isNaN(v) ? 0 : v;
-        renderChart(scenario);
-        refreshYearlyGrid(path, scenario);
         save();
+        schedulePathHeavyUi(path, scenario);
       });
       field.appendChild(lbl);
       field.appendChild(inp);
@@ -728,9 +773,8 @@
       inp.addEventListener('input', function () {
         var v = parseFloat(inp.value);
         path.simple[f.key] = isNaN(v) ? 0 : v;
-        renderChart(scenario);
-        refreshYearlyGrid(path, scenario);
         save();
+        schedulePathHeavyUi(path, scenario);
       });
       field.appendChild(lbl);
       field.appendChild(inp);
@@ -764,9 +808,8 @@
       inp.addEventListener('input', function () {
         var v = parseFloat(inp.value);
         path.milestones[f.key] = isNaN(v) ? 0 : v;
-        renderChart(scenario);
-        refreshYearlyGrid(path, scenario);
         save();
+        schedulePathHeavyUi(path, scenario);
       });
       field.appendChild(lbl);
       field.appendChild(inp);
@@ -803,9 +846,8 @@
         inpYos.addEventListener('input', function () {
           var v = parseInt(inpYos.value, 10);
           step.yos = isNaN(v) ? 0 : v;
-          renderChart(scenario);
-          refreshYearlyGrid(path, scenario);
           save();
+          schedulePathHeavyUi(path, scenario);
         });
         tdYos.appendChild(inpYos);
         tr.appendChild(tdYos);
@@ -816,9 +858,8 @@
         inpRate.addEventListener('input', function () {
           var v = parseFloat(inpRate.value);
           step.rate = isNaN(v) ? 0 : v;
-          renderChart(scenario);
-          refreshYearlyGrid(path, scenario);
           save();
+          schedulePathHeavyUi(path, scenario);
         });
         tdRate.appendChild(inpRate);
         tr.appendChild(tdRate);
@@ -904,8 +945,8 @@
     probInput.addEventListener('input', function () {
       var v = parseFloat(probInput.value);
       path.furloughProbability = isNaN(v) ? 0 : clamp(v, 0, 100);
-      renderChart(scenario);
       save();
+      scheduleScenarioChartDebounced(scenario);
     });
     probField.appendChild(probLabel);
     probField.appendChild(probInput);
@@ -944,9 +985,8 @@
         fromInp.type = 'number'; fromInp.value = ev.startYear; fromInp.style.width = '80px';
         fromInp.addEventListener('input', function () {
           ev.startYear = parseInt(fromInp.value, 10) || ev.startYear;
-          renderChart(scenario);
-          refreshYearlyGrid(path, scenario);
           save();
+          schedulePathHeavyUi(path, scenario);
         });
         row.appendChild(fromInp);
 
@@ -957,9 +997,8 @@
         toInp.type = 'number'; toInp.value = ev.endYear; toInp.style.width = '80px';
         toInp.addEventListener('input', function () {
           ev.endYear = parseInt(toInp.value, 10) || ev.endYear;
-          renderChart(scenario);
-          refreshYearlyGrid(path, scenario);
           save();
+          schedulePathHeavyUi(path, scenario);
         });
         row.appendChild(toInp);
 
@@ -972,9 +1011,8 @@
         multInp.addEventListener('input', function () {
           ev.payMultiplier = parseFloat(multInp.value);
           if (isNaN(ev.payMultiplier)) ev.payMultiplier = 1;
-          renderChart(scenario);
-          refreshYearlyGrid(path, scenario);
           save();
+          schedulePathHeavyUi(path, scenario);
         });
         row.appendChild(multInp);
 
@@ -1084,9 +1122,8 @@
           path.yearlyOverrides[row.year] = path.yearlyOverrides[row.year] || {};
           path.yearlyOverrides[row.year].rate = v;
         }
-        renderChart(scenario);
-        refreshYearlyGrid(path, scenario);
         save();
+        schedulePathHeavyUi(path, scenario);
       });
       rateTd.appendChild(rateInp);
       tr.appendChild(rateTd);
@@ -1109,9 +1146,8 @@
           path.yearlyOverrides[row.year] = path.yearlyOverrides[row.year] || {};
           path.yearlyOverrides[row.year].creditHours = v;
         }
-        renderChart(scenario);
-        refreshYearlyGrid(path, scenario);
         save();
+        schedulePathHeavyUi(path, scenario);
       });
       chTd.appendChild(chInp);
       tr.appendChild(chTd);
@@ -1134,9 +1170,8 @@
           path.yearlyOverrides[row.year] = path.yearlyOverrides[row.year] || {};
           path.yearlyOverrides[row.year].income = v;
         }
-        renderChart(scenario);
-        refreshYearlyGrid(path, scenario);
         save();
+        schedulePathHeavyUi(path, scenario);
       });
       incTd.appendChild(incInp);
       tr.appendChild(incTd);
@@ -1487,6 +1522,19 @@
       item.appendChild(lbl);
       lg.appendChild(item);
     });
+    if (els.showBand && els.showBand.checked) {
+      var bandItem = document.createElement('div');
+      bandItem.className = 'legend-item career-legend-band-note';
+      var bandSw = document.createElement('span');
+      bandSw.className = 'legend-swatch legend-swatch-band';
+      bandSw.setAttribute('aria-hidden', 'true');
+      var bandLbl = document.createElement('span');
+      bandLbl.textContent =
+        'Probability band: bottom of the shading = 10th percentile (lower outcomes); top = 90th.';
+      bandItem.appendChild(bandSw);
+      bandItem.appendChild(bandLbl);
+      lg.appendChild(bandItem);
+    }
   }
 
   function renderCrossovers(scenario, data) {
@@ -1803,10 +1851,8 @@
         if (key === 'endYear' || key === 'startYear') {
           if (s.endYear < s.startYear) s.endYear = s.startYear;
         }
-        renderChart(s);
-        // Yearly grids depend on year range
-        renderPaths(s);
         save();
+        scheduleScenarioPathsAndChart(s);
       };
     }
     els.startYear.addEventListener('input', updateScenarioField('startYear', function (v) { return parseInt(v, 10); }));
@@ -1815,7 +1861,8 @@
     els.interestRate.addEventListener('input', updateScenarioField('interestRate', function (v) { return parseFloat(v); }));
     els.mcSims.addEventListener('input', function () {
       var s = getActive(); if (!s) return;
-      renderChart(s);
+      save();
+      scheduleScenarioChartDebounced(s);
     });
     els.showBand.addEventListener('change', function () {
       var s = getActive(); if (!s) return;

@@ -1289,6 +1289,19 @@ input[type="number"] {
   border-radius: 2px;
 }
 
+.career-legend .legend-swatch-band {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.career-legend .career-legend-band-note {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .career-crossover-list {
   margin-top: 0.85rem;
   display: flex;
