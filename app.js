@@ -996,6 +996,51 @@
     }
   }
 
+  function computeScenarioIncome(data) {
+    if (!data.payYear || !Array.isArray(data.payYear.months)) return 0;
+    var months = data.payYear.months;
+    var baseTotal = months.reduce(function (sum, m) {
+      return sum + (m.payRate || 0) * (m.credit || 0) * (m.bidPeriods || 1) * (m.percentage || 1);
+    }, 0);
+
+    if (!data.retirementMode) return baseTotal;
+
+    var dcRate = ((data.dcRate != null ? data.dcRate : 15) || 0) / 100;
+    if (dcRate <= 0) return baseTotal;
+
+    var irsLimits = data.irsLimits || {};
+    var limit415c = irsLimits.limit415c != null ? irsLimits.limit415c : 72000;
+    var empDeferral = irsLimits.empDeferral != null ? irsLimits.empDeferral : 24500;
+    var compLimit = COMP_LIMIT_401A17;
+
+    var dcRoom = Math.max(0, limit415c - empDeferral);
+    var cumulativeComp = 0;
+    var totalBasePay = 0;
+    var totalSpillCash = 0;
+
+    months.forEach(function (m) {
+      var basePay = (m.payRate || 0) * (m.credit || 0) * (m.bidPeriods || 1);
+      var prevCumulativeComp = cumulativeComp;
+      cumulativeComp += basePay;
+      totalBasePay += basePay;
+
+      var eligibleComp = 0;
+      if (prevCumulativeComp < compLimit) {
+        eligibleComp = Math.min(basePay, compLimit - prevCumulativeComp);
+      }
+
+      var intendedDC = eligibleComp * dcRate;
+      var spillFromCompLimit = (basePay - eligibleComp) * dcRate;
+      var actualDC = Math.min(intendedDC, dcRoom);
+      var spillFrom415c = intendedDC - actualDC;
+
+      dcRoom -= actualDC;
+      totalSpillCash += spillFromCompLimit + spillFrom415c;
+    });
+
+    return totalBasePay + totalSpillCash;
+  }
+
   function renderScenarioSlots() {
     if (!scenarioSlots) return;
     scenarioSlots.innerHTML = '';
@@ -1023,9 +1068,7 @@
         const summary = document.createElement('div');
         summary.className = 'scenario-summary';
         const scGoal = sc.data.goal;
-        const scTotal = sc.data.payYear ? sc.data.payYear.months.reduce((sum, m) => {
-          return sum + (m.payRate || 0) * (m.credit || 0) * (m.bidPeriods || 1) * (m.percentage || 1);
-        }, 0) : 0;
+        const scTotal = computeScenarioIncome(sc.data);
         summary.innerHTML =
           '<span>Goal: <strong>' + formatMoney(scGoal || 0) + '</strong></span>' +
           '<span>Income: <strong>' + formatMoney(scTotal) + '</strong></span>';
@@ -1134,6 +1177,7 @@
       const months = d.payYear ? d.payYear.months : [];
       const scGoal = d.goal || 0;
       let total = 0;
+      const displayedTotal = computeScenarioIncome(d);
 
       html += '<div class="col">';
       html += '<h2>' + escapeHtml(sc.name) + '</h2>';
@@ -1149,6 +1193,7 @@
           html += 'Bid periods: <strong>' + (months[0].bidPeriods || 1) + '</strong> &middot; ';
           html += 'Percentage: <strong>' + Math.round((months[0].percentage || 1) * 100) + '%</strong>';
         }
+        if (d.retirementMode) html += '<br>Mode: <strong>Retirement</strong>';
         html += '</div>';
       }
 
@@ -1213,9 +1258,9 @@
         html += '</tr>';
       });
 
-      const diff = total - scGoal;
+      const diff = displayedTotal - scGoal;
       const cls = diff >= 0 ? 'met' : 'under';
-      html += '<tr class="total-row"><td>Total</td><td></td><td></td><td>' + formatMoney(total) + '</td></tr>';
+      html += '<tr class="total-row"><td>Total</td><td></td><td></td><td>' + formatMoney(displayedTotal) + '</td></tr>';
       html += '<tr><td>Remaining</td><td></td><td></td><td class="' + cls + '">' + (diff >= 0 ? '+' : '-') + formatMoney(Math.abs(diff)) + '</td></tr>';
       html += '</tbody></table>';
       html += '</div>';
